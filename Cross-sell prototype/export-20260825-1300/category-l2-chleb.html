@@ -127234,16 +127234,12 @@ body :where([data-proto='notification-modal']) p { margin-bottom: 1rem; }
         // pending copy-team review — "Pomazánkové máslo" is the deliberate
         // choice here; the production category name is "Pomazánkové".
         categories: [
-          // Ordered by sales volume: sum of the top-3 bestseller quantities
-          // per category from the sales CSV (last 30 days) — Sýry 109 816,
-          // Šunky 53 756, Máslo 33 569, Salámy 16 731, Pomazánkové máslo
-          // 11 228, Pomazánky 10 351. Labels/values/ids unchanged.
-          { value: 'c945', label: 'Sýry', ids: [767408,767412,767416,767410,14767,15027,741174,14777,14757,741170,74137,162677,74127,741188,819066,743210,767414,12827,17327,243484] },
-          { value: 'c1059', label: 'Šunky', ids: [19727,554436,795586,795588,795584,726102,795650,820438,725796,714662,596381,96567,20107,19687,97107,233224,88317,19737,97117,796576] },
           { value: 'c904', label: 'Máslo', ids: [1000788110,18147,788104,1000788104,788136,721678,162717,776484,74327,720142,12677,13317,62117,513245,737400,14297,636150,162727,704453,789914] },
-          { value: 'c1053', label: 'Salámy', ids: [795590,795594,788366,820436,88467,380344,19777,770358,380334,137827,380404,135997,88447,810462,726104,546676,559201,559211,97167,559181] },
           { value: 'c905', label: 'Pomazánkové máslo', ids: [73567,675796,408234,12507,17157,12857,13827,408244,13657,13797,799032,799030,795636] },
           { value: 'c1068', label: 'Pomazánky', ids: [625549,612249,790154,790152,790150,684242,790146,612229,704143,807882,725692,806774,704203,818258,21337,800430,1000800430,21407,818256,800442] },
+          { value: 'c1059', label: 'Šunky', ids: [19727,554436,795586,795588,795584,726102,795650,820438,725796,714662,596381,96567,20107,19687,97107,233224,88317,19737,97117,796576] },
+          { value: 'c1053', label: 'Salámy', ids: [795590,795594,788366,820436,88467,380344,19777,770358,380334,137827,380404,135997,88447,810462,726104,546676,559201,559211,97167,559181] },
+          { value: 'c945', label: 'Sýry', ids: [767408,767412,767416,767410,14767,15027,741174,14777,14757,741170,74137,162677,74127,741188,819066,743210,767414,12827,17327,243484] },
         ],
       }
       // PROTO:CONFIG-END cross-sell-modal
@@ -127648,20 +127644,8 @@ body :where([data-proto='notification-modal']) p { margin-bottom: 1rem; }
           const crossSellModalIdSets = Object.fromEntries(
             CROSS_SELL_MODAL.categories.map(({ value, ids }) => [value, new Set(ids)]),
           )
-          // 'Vše' order: round-robin across categories in their sales order
-          // (CROSS_SELL_MODAL.categories); production order within each
-          // category. Derived here so productIds stays the raw capture.
-          const crossSellModalById = new Map(crossSellModalProducts.map((product) => [product.id, product]))
-          const crossSellModalRounds = Math.max(...CROSS_SELL_MODAL.categories.map(({ ids }) => ids.length))
-          const crossSellModalAllProducts = []
-          for (let round = 0; round < crossSellModalRounds; round += 1) {
-            CROSS_SELL_MODAL.categories.forEach(({ ids }) => {
-              const product = crossSellModalById.get(ids[round])
-              if (product) crossSellModalAllProducts.push(product)
-            })
-          }
           const crossSellModalVisibleProducts = computed(() => {
-            if (crossSellModalTab.value === 'all') return crossSellModalAllProducts
+            if (crossSellModalTab.value === 'all') return crossSellModalProducts
             const idSet = crossSellModalIdSets[crossSellModalTab.value]
             return crossSellModalProducts.filter((product) => idSet.has(product.id))
           })
