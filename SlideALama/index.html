@@ -117,14 +117,18 @@
   .queue .col{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:8px}
   .queue .col + .col{border-left:1px solid var(--line);padding-left:16px}
   .queue .lab{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  .qnext{display:flex;gap:6px;align-items:center;height:60px}
+  .qnext{display:flex;gap:8px;align-items:center;height:60px}
+  /* --cell si náhledy nastavují samy, aby velikost symbolu nezávisela na velikosti políček desky */
   .cur{
-    width:60px;height:60px;border-radius:14px;display:grid;place-items:center;
+    --cell:60px;width:60px;height:60px;border-radius:14px;display:grid;place-items:center;
     box-shadow:0 0 0 2px #fff2 inset,0 10px 26px -12px #000;
     animation:breathe 2.4s ease-in-out infinite;
   }
   @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-  .mini{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;opacity:.75}
+  .mini{
+    --cell:44px;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;opacity:.82;
+    box-shadow:0 0 0 1px #0004 inset;
+  }
 
   .play{
     display:grid;
@@ -706,7 +710,7 @@ function renderQueue(){
   paintSwatch($('curTile'), state.queue[0]);
   const box = $('qNext');
   box.innerHTML = '';
-  for (let i = 1; i <= 3; i++){
+  for (let i = 1; i <= 2; i++){
     const d = document.createElement('div');
     d.className = 'mini';
     paintSwatch(d, state.queue[i]);

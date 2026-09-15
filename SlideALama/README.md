@@ -29,7 +29,7 @@ před soupeřem k tobě přeběhne jedna jeho lama. Kdo získá všech 10 lam �
 **Tah.** Hraje se na desce 5×5, která je na začátku už **částečně zaplněná náhodnými kameny**
 (zhruba 60 % plochy) — nikdy ale tak, aby na startu ležela hotová trojice, takže první tah
 nikomu nespadne do klína zadarmo. Hráči se střídají a losují kameny ze společné fronty
-(vidíš i tři kameny dopředu). Kámen vsouváš ze tří stran: zleva a zprava do řádku,
+(vidíš i dva kameny dopředu). Kámen vsouváš ze tří stran: zleva a zprava do řádku,
 shora do sloupce. Kameny se posouvají a padají dolů gravitací. Když vsuneš šestý kámen
 do plné řady, kámen na protilehlém konci vypadne ze hry.
 
