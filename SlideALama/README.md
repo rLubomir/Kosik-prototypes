@@ -34,7 +34,7 @@ shora do sloupce. Kameny se posouvají a padají dolů gravitací. Když vsuneš
 do plné řady, kámen na protilehlém konci vypadne ze hry.
 
 **Bodování.** Tři a více stejných symbolů vedle sebe v řádku nebo sloupci zmizí a boduje.
-Tabulka je vidět přímo pod hrací deskou, není schovaná v pravidlech:
+Tabulka je vidět vlevo od hrací desky, není schovaná v pravidlech:
 
 | Symbol | 3 stejné | 4 stejné (×2) | 5 stejných (×3) |
 |--------|---------:|--------------:|----------------:|
@@ -48,6 +48,14 @@ Tabulka je vidět přímo pod hrací deskou, není schovaná v pravidlech:
 
 **Komba.** Když po zmizení skupiny spadnou kameny tak, že vznikne další skupina,
 sečte se i ta — a tak pořád dokola. Celý řetěz padá na účet hráče, který tah zahrál.
+
+## Vzhled
+
+Grafika vychází ze snímku původní ICQ hry: pouštní scéna s modrou oblohou a pískem,
+hrací deska zasazená do stupňovité pyramidy, světlé kamenné dlaždice se symboly,
+výplatní tabulka vlevo od desky, skóre na oranžových LED displejích a deset lam
+stojících dole na schodech — pět červených vlevo, pět modrých vpravo, otočených
+čelem k sobě. Jak se mění náskok, lamy přebíhají z jedné strany na druhou.
 
 ## Odkud pravidla pocházejí
 
