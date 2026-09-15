@@ -196,6 +196,20 @@
   }
   .status b{color:var(--ink)}
 
+  /* ---------- viditelná bodová tabulka ---------- */
+  .paypanel{
+    margin-top:18px;background:linear-gradient(180deg,var(--panel),#1e1636);
+    border:1px solid var(--line);border-radius:16px;padding:14px 16px;
+  }
+  .paypanel .head{
+    display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:11px;
+  }
+  .paypanel .head h2{
+    margin:0;font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);font-weight:800;
+  }
+  .paypanel .head .mult{font-size:12px;color:var(--muted);font-weight:600}
+  .paypanel .head .mult b{color:var(--ink)}
+
   /* ---------- rules ---------- */
   .rules{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
   .rules summary{cursor:pointer;padding:13px 16px;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between}
@@ -286,6 +300,14 @@
     </div>
   </div>
 
+  <section class="paypanel">
+    <div class="head">
+      <h2>Bodování — 3 stejné symboly v řadě</h2>
+      <div class="mult">4 stejné <b>×2</b> &nbsp;·&nbsp; 5 stejných <b>×3</b></div>
+    </div>
+    <div class="paytable" id="paytable"></div>
+  </section>
+
   <details class="rules">
     <summary>📖 Pravidla hry</summary>
     <div class="body">
@@ -296,7 +318,9 @@
 
       <h3>Tah</h3>
       <ul>
-        <li>Hraje se na desce <b>5×5</b>, hráči se střídají a losují kameny ze společné fronty.</li>
+        <li>Hraje se na desce <b>5×5</b>, která je na začátku už částečně zaplněná náhodnými kameny
+            (nikdy ale tak, aby hned na startu ležela hotová trojice).</li>
+        <li>Hráči se střídají a losují kameny ze společné fronty.</li>
         <li>Kámen vsouváš ze <b>tří stran</b>: zleva a zprava do řádku, shora do sloupce.</li>
         <li>Kameny se posouvají a <b>padají dolů</b> gravitací. Pokud vsuneš šestý kámen do plné řady,
             ten na protilehlém konci <b>vypadne ze hry</b>.</li>
@@ -304,8 +328,8 @@
 
       <h3>Bodování</h3>
       <p>Spoj <b>3 a více stejných symbolů</b> vedle sebe v řádku nebo sloupci — celá skupina zmizí a získáš body.
-      <b>4 stejné = dvojnásobek</b>, <b>5 stejných = trojnásobek</b>.</p>
-      <div class="paytable" id="paytable"></div>
+      <b>4 stejné = dvojnásobek</b>, <b>5 stejných = trojnásobek</b>. Hodnoty jednotlivých symbolů
+      najdeš v tabulce nad těmito pravidly.</p>
 
       <h3>Komba</h3>
       <p>Když po zmizení skupiny spadnou kameny tak, že vznikne další skupina, sečte se i ta —
@@ -468,6 +492,31 @@ function resolveAll(board){
     b = removeCluster(b, c);
   }
   return {board:b, total, chain};
+}
+
+/**
+ * Náhodně zaplněná startovní deska.
+ * Sloupce mají různou výšku (2–4 kameny, zarovnané dolů kvůli gravitaci) a plní se
+ * zdola nahoru a zleva doprava. Každý kámen se vybírá tak, aby neuzavřel trojici —
+ * v tomhle pořadí je každá vodorovná trojice kontrolovaná svým pravým koncem
+ * a každá svislá svým horním, takže výsledek nikdy neobsahuje hotovou skupinu.
+ */
+function randomStartBoard(){
+  const b = emptyBoard();
+  const heights = Array.from({length:N}, () => 2 + Math.floor(Math.random() * 3));
+
+  for (let y = N - 1; y >= 0; y--){
+    for (let x = 0; x < N; x++){
+      if (y < N - heights[x]) continue;
+      const banned = new Set();
+      if (b[y][x-1] && b[y][x-2] && b[y][x-1].s === b[y][x-2].s) banned.add(b[y][x-1].s);
+      if (y + 2 < N && b[y+1][x] && b[y+2][x] && b[y+1][x].s === b[y+2][x].s) banned.add(b[y+1][x].s);
+      let s;
+      do { s = randSym(); } while (banned.has(s));
+      b[y][x] = mkTile(s);
+    }
+  }
+  return b;
 }
 
 /** Všech 15 možných tahů (3 směry × 5 řádků/sloupců). */
@@ -781,7 +830,7 @@ function endGame(winner){
    Start
    ============================================================ */
 function newGame(){
-  state.board = emptyBoard();
+  state.board = randomStartBoard();
   state.queue = [randSym(), randSym(), randSym(), randSym()];
   state.turn = 0;
   state.score = [0, 0];

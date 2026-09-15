@@ -26,12 +26,15 @@ Jména hráčů jdou přepsat kliknutím na ně.
 před soupeřem k tobě přeběhne jedna jeho lama. Kdo získá všech 10 lam — tedy náskok
 **300 bodů** — vyhrává. Dokud se náskok mění, lamy se můžou vracet zpátky.
 
-**Tah.** Hraje se na desce 5×5. Hráči se střídají a losují kameny ze společné fronty
+**Tah.** Hraje se na desce 5×5, která je na začátku už **částečně zaplněná náhodnými kameny**
+(zhruba 60 % plochy) — nikdy ale tak, aby na startu ležela hotová trojice, takže první tah
+nikomu nespadne do klína zadarmo. Hráči se střídají a losují kameny ze společné fronty
 (vidíš i tři kameny dopředu). Kámen vsouváš ze tří stran: zleva a zprava do řádku,
 shora do sloupce. Kameny se posouvají a padají dolů gravitací. Když vsuneš šestý kámen
 do plné řady, kámen na protilehlém konci vypadne ze hry.
 
-**Bodování.** Tři a více stejných symbolů vedle sebe v řádku nebo sloupci zmizí a boduje:
+**Bodování.** Tři a více stejných symbolů vedle sebe v řádku nebo sloupci zmizí a boduje.
+Tabulka je vidět přímo pod hrací deskou, není schovaná v pravidlech:
 
 | Symbol | 3 stejné | 4 stejné (×2) | 5 stejných (×3) |
 |--------|---------:|--------------:|----------------:|
@@ -56,7 +59,7 @@ který hru reverzně analyzoval — odtud jsou bodové hodnoty symbolů, vzorec
 
 Jediné, co ze zdrojů dohledat nešlo, je **četnost jednotlivých symbolů**. Ta je proto
 navržená tak, aby cennější symboly padaly o něco vzácněji a partie měla rozumné tempo
-(medián zhruba 86 tahů, tj. 4–8 minut).
+(medián zhruba 85–115 tahů podle toho, jak přesně hráči hrají, tj. řádově 5–10 minut).
 
 ## Poznámky k implementaci
 
