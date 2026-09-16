@@ -4,6 +4,22 @@ Kopie herní mechaniky legendární ICQ hry **Slide-a-Lama**, varianta **Slots**
 Hra pro **dva hráče u jedné obrazovky** — hráči se střídají v tazích na sdílené desce,
 stejně jako v originále.
 
+## Dva režimy
+
+**Lokálně** — otevři `index.html` v prohlížeči. Hrajete ve dvou u jedné obrazovky,
+střídáte se v tazích. Žádný build ani server.
+
+**Online** — tatáž stránka publikovaná jako Claude Artifact se schopností `db`.
+Kdo otevře odkaz, sedne si na volné místo (hráč 1 / hráč 2), třetí příchozí se
+jen dívá. Tahy se propisují živě přes jeden sdílený dokument.
+
+Stejný soubor zvládne obojí: online vrstva se zapne, jen když je `db` k dispozici,
+jinak stránka zůstane u hry pro dva na jednom zařízení.
+
+> **Pozor:** artifact se schopností `db` je *organization-internal* — každý, kdo ho
+> otevře, musí být přihlášený člen stejné organizace. Na hraní s někým zvenku by
+> bylo potřeba jiné řešení (např. Firebase).
+
 ## Spuštění
 
 Otevři `index.html` v prohlížeči. Žádný build, server ani závislosti — jeden soubor.
@@ -65,5 +81,8 @@ navržená tak, aby cennější symboly padaly o něco vzácněji a partie měla
 
 Celá herní logika je v `index.html` oddělená jako čisté funkce bez DOM
 (`applyInsert`, `findClusters`, `bestCluster`, `resolveAll`), takže jde testovat
-samostatně. Vykreslování stojí na CSS transformacích — každý kámen má vlastní element
+samostatně. Online režim toho využívá: kdo je na tahu, spočítá výsledek těmito
+funkcemi, zapíše ho do sdíleného dokumentu a teprve pak si tah odanimuje. Druhá
+strana přehraje stejný tah stejnou animací a nakonec porovná svou desku s deskou
+z dokumentu — kdyby se rozešly, přebírá dokument, takže se stav sám narovná. Vykreslování stojí na CSS transformacích — každý kámen má vlastní element
 s `transform: translate(...)`, takže posuny i pády se animují samy.

@@ -64,6 +64,23 @@
   }
   @media (max-width:560px){ .who{display:none} }
 
+  /* ---------- online lišta ---------- */
+  .netbar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:linear-gradient(180deg,var(--panel),#1e1636);
+    border:1px solid var(--line);border-left:3px solid var(--a);
+    border-radius:12px;padding:9px 14px;margin-bottom:14px;font-size:13px;
+  }
+  .netbar[hidden]{display:none!important}
+  .netbar.waiting{border-left-color:var(--gold)}
+  .netbar .tag{
+    font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;
+    color:#2a1a00;background:linear-gradient(135deg,var(--gold),var(--gold2));
+    border-radius:999px;padding:3px 9px;
+  }
+  .netbar .seat{font-weight:800;color:var(--ink)}
+  .netbar .note{color:var(--muted);font-weight:600}
+
   /* ---------- layout ---------- */
   .stage{display:grid;grid-template-columns:1fr minmax(300px,420px) 1fr;gap:16px;align-items:start}
   @media (max-width:900px){
@@ -257,6 +274,12 @@
       <button class="btn" id="newBtn">↻ Nová hra</button>
     </div>
   </header>
+
+  <div class="netbar" id="netbar" hidden>
+    <span class="tag">Online</span>
+    <span class="seat">Jsi <span id="netSeat">—</span></span>
+    <span class="note" id="netNote"></span>
+  </div>
 
   <div class="stage">
     <div class="player p0" id="pan0">
@@ -749,23 +772,286 @@ function setArrows(enabled){
 }
 
 /* ============================================================
+   Online hra přes sdílený dokument (capability "db")
+   ------------------------------------------------------------
+   Autoritou je jeden dokument "match/state". Kdo je na tahu, spočítá výsledek
+   čistými funkcemi, zapíše ho a teprve pak si tah odanimuje; druhá strana
+   dostane zápis, přehraje si stejný tah stejnou animací a nakonec se porovná
+   s deskou z dokumentu — kdyby se rozešly, přebírá se dokument.
+
+   Bez "db" (otevřeno jako soubor na disku) zůstává hra pro dva u jedné obrazovky.
+   ============================================================ */
+const ONLINE = {
+  db: null,
+  me: null,        // identita tohoto prohlížeče
+  seat: null,      // 0 | 1 | null (divák)
+  seats: {},
+  seq: -1,
+  pending: null,   // poslední dokument čekající na dohrání animace
+  unsub: [],
+};
+
+const SEATS_PATH = 'match/seats';
+const STATE_PATH = 'match/state';
+
+function clientId(){
+  let id = null;
+  try { id = localStorage.getItem('sal-client'); } catch (e) {}
+  if (!id){
+    id = 'c' + Math.random().toString(36).slice(2, 10);
+    try { localStorage.setItem('sal-client', id); } catch (e) {}
+  }
+  return id;
+}
+
+const encodeBoard = b => {
+  let out = '';
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) out += b[y][x] ? b[y][x].s : '.';
+  return out;
+};
+function decodeBoard(str){
+  const b = emptyBoard();
+  for (let i = 0; i < N * N; i++){
+    const ch = str[i];
+    if (ch !== '.') b[(i / N) | 0][i % N] = mkTile(+ch);
+  }
+  return b;
+}
+
+/** Stav hry jako tělo dokumentu. */
+const packState = (extra = {}) => Object.assign({
+  seq: ONLINE.seq,
+  board: encodeBoard(state.board),
+  queue: state.queue.slice(),
+  score: state.score.slice(),
+  turn: state.turn,
+  over: state.over,
+}, extra);
+
+function freshGameDoc(){
+  const board = randomStartBoard();
+  return {
+    seq: 0,
+    board: encodeBoard(board),
+    queue: [randSym(), randSym(), randSym(), randSym()],
+    score: [0, 0],
+    turn: 0,
+    over: false,
+    last: null,
+  };
+}
+
+/** Převezme stav z dokumentu bez animace (první načtení nebo náprava rozejití). */
+function adoptDoc(d){
+  state.board = decodeBoard(d.board);
+  state.queue = d.queue.slice();
+  state.score = d.score.slice();
+  state.turn = d.turn;
+  state.over = !!d.over;
+  state.llamaDiff = 0;
+  nodes.forEach(el => el.remove());
+  nodes.clear();
+  $('fx').innerHTML = '';
+  $('over').hidden = !state.over;
+  renderBoard(); renderQueue(); renderPanels(); measure();
+  if (state.over) showWinner(state.score[0] > state.score[1] ? 0 : 1);
+  else updateStatus();
+  refreshControls();
+}
+
+async function initOnline(){
+  let db = null;
+  try { db = await claude.use('db'); } catch (e) { db = null; }
+  if (!db) return;                       // hra zůstává lokální
+
+  ONLINE.db = db;
+  ONLINE.me = clientId();
+  setOnlineNote('Připojuji…');
+
+  try {
+    await claimSeat();
+  } catch (e) {
+    setOnlineNote('Místo se nepodařilo zabrat, hraješ jako divák.');
+  }
+
+  ONLINE.unsub.push(db.doc(SEATS_PATH).onSnapshot(
+    snap => { ONLINE.seats = snap.exists ? snap.data() : {}; refreshControls(); },
+    () => setOnlineNote('Spojení se přerušilo, načti stránku znovu.')
+  ));
+
+  ONLINE.unsub.push(db.doc(STATE_PATH).onSnapshot(
+    snap => {
+      if (!snap.exists){
+        if (ONLINE.seat === 0) db.doc(STATE_PATH).set(freshGameDoc()).catch(() => {});
+        return;
+      }
+      ONLINE.pending = snap.data();
+      drainPending();
+    },
+    () => setOnlineNote('Spojení se přerušilo, načti stránku znovu.')
+  ));
+
+  refreshControls();
+}
+
+/** Zabere volné místo. Krátká výpůjčka dokumentu brání tomu, aby oba sedli na stejné. */
+async function claimSeat(){
+  const ref = ONLINE.db.doc(SEATS_PATH);
+  const now = (await ref.get()).data() || {};
+  if (now.p0 === ONLINE.me) { ONLINE.seat = 0; return; }
+  if (now.p1 === ONLINE.me) { ONLINE.seat = 1; return; }
+
+  const lease = await ref.acquire({ holder: ONLINE.me, ttlMs: 4000 });
+  if (!lease.acquired) return;                    // někdo právě zabírá, zůstáváme divákem
+
+  const cur = (await ref.get()).data() || {};
+  const seat = !cur.p0 ? 0 : (!cur.p1 ? 1 : null);
+  if (seat === null) return;
+  const body = Object.assign({}, cur);
+  body['p' + seat] = ONLINE.me;
+  await ref.set(body);
+  ONLINE.seat = seat;
+}
+
+/** Zpracuje čekající dokument, jakmile doběhne rozehraná animace. */
+async function drainPending(){
+  if (state.busy || !ONLINE.pending) return;
+  const d = ONLINE.pending;
+  ONLINE.pending = null;
+
+  if (d.seq === ONLINE.seq) return;
+  const mine = d.last && d.last.by === ONLINE.seat;
+
+  if (mine){ ONLINE.seq = d.seq; return; }        // vlastní zápis se jen vrátil
+
+  if (d.seq === ONLINE.seq + 1 && d.last){
+    ONLINE.seq = d.seq;
+    state.busy = true;
+    refreshControls();
+    const { total, chain } = await runMoveAnimation(d.last.dir, d.last.idx, d.last.sym);
+    announceScore(d.last.by, total, chain);
+    state.busy = false;
+    if (encodeBoard(state.board) !== d.board) adoptDoc(d);
+    else {
+      state.queue = d.queue.slice();
+      state.score = d.score.slice();
+      state.turn = d.turn;
+      state.over = !!d.over;
+      renderPanels(); renderQueue();
+      if (state.over) endGameOnline(d);
+      else { updateStatus(); refreshControls(); }
+    }
+  } else {
+    ONLINE.seq = d.seq;
+    adoptDoc(d);
+  }
+  if (ONLINE.pending) drainPending();
+}
+
+/** Tah hráče v online hře: nejdřív zápis, pak animace. */
+async function onlineMove(dir, idx){
+  const who = ONLINE.seat;
+  const sym = state.queue[0];
+
+  const ins = applyInsert(state.board, dir, idx, mkTile(sym));
+  const res = resolveAll(ins.board);
+  const queue = state.queue.slice(1).concat(randSym());
+  const score = state.score.slice();
+  score[who] += res.total;
+  const over = Math.abs(score[0] - score[1]) >= WIN_DIFF;
+
+  state.busy = true;
+  refreshControls();
+  ONLINE.seq += 1;
+
+  const doc = {
+    seq: ONLINE.seq,
+    board: encodeBoard(res.board),
+    queue, score, turn: over ? who : 1 - who, over,
+    last: { dir, idx, sym, by: who },
+  };
+
+  try {
+    await ONLINE.db.doc(STATE_PATH).set(doc);
+  } catch (e) {
+    ONLINE.seq -= 1;
+    state.busy = false;
+    setOnlineNote('Tah se nepodařilo odeslat, zkus to znovu.');
+    refreshControls();
+    return;
+  }
+
+  const anim = await runMoveAnimation(dir, idx, sym);
+  announceScore(who, anim.total, anim.chain);
+  state.queue = queue;
+  state.score = score;
+  state.turn = doc.turn;
+  state.over = over;
+  state.busy = false;
+  renderPanels(); renderQueue();
+  if (over) endGameOnline(doc);
+  else { updateStatus(); refreshControls(); }
+  drainPending();
+}
+
+async function newOnlineGame(){
+  if (!ONLINE.db || ONLINE.seat === null) return;
+  const doc = freshGameDoc();
+  ONLINE.seq = 0;
+  await ONLINE.db.doc(STATE_PATH).set(doc).catch(() => {});
+  adoptDoc(doc);
+}
+
+function endGameOnline(d){
+  state.over = true;
+  showWinner(d.score[0] > d.score[1] ? 0 : 1);
+  refreshControls();
+}
+
+/* --- kdo smí hrát --- */
+function bothSeated(){ return !!(ONLINE.seats.p0 && ONLINE.seats.p1); }
+function canPlay(){
+  if (state.busy || state.over) return false;
+  if (!ONLINE.db) return true;
+  return ONLINE.seat === state.turn && bothSeated();
+}
+
+function setOnlineNote(text){
+  const el = $('netNote');
+  if (el) el.textContent = text;
+}
+
+/** Sjednotí ovládání a online lištu s aktuálním stavem. */
+function refreshControls(){
+  setArrows(canPlay());
+  const bar = $('netbar');
+  if (!bar) return;
+  if (!ONLINE.db){ bar.hidden = true; return; }
+  bar.hidden = false;
+
+  const seatName = ONLINE.seat === null ? 'divák' : `hráč ${ONLINE.seat + 1}`;
+  $('netSeat').textContent = seatName;
+  bar.classList.toggle('waiting', !bothSeated());
+
+  if (ONLINE.seat === null) setOnlineNote('Obě místa jsou obsazená — koukáš se.');
+  else if (!bothSeated()) setOnlineNote('Čeká se na druhého hráče. Pošli mu odkaz na tuhle stránku.');
+  else if (state.over) setOnlineNote('Hra skončila.');
+  else if (state.turn === ONLINE.seat) setOnlineNote('Jsi na tahu.');
+  else setOnlineNote('Na tahu je soupeř…');
+}
+
+/* ============================================================
    Průběh tahu
    ============================================================ */
-async function playMove(dir, idx){
-  if (state.busy || state.over) return;
-  state.busy = true;
-  setArrows(false);
-
-  const who = state.turn;
-  const tile = mkTile(state.queue[0]);
-  const ins = applyInsert(state.board, dir, idx, tile);
-
-  if (ins.ejected){
-    state.board = ins.board;
-    flyEject(ins.ejected, dir, idx);
-  } else {
-    state.board = ins.board;
-  }
+/**
+ * Odehraje jeden tah včetně animací a řetězu komb. Nemění skóre ani frontu —
+ * ty řídí volající, protože online je autoritou sdílený dokument, ne tenhle prohlížeč.
+ * Stejná funkce přehrává i soupeřův tah, takže obě strany vidí totožnou animaci.
+ */
+async function runMoveAnimation(dir, idx, sym){
+  const ins = applyInsert(state.board, dir, idx, mkTile(sym));
+  state.board = ins.board;
+  if (ins.ejected) flyEject(ins.ejected, dir, idx);
   renderBoard();
   Snd.drop();
   await wait(300);
@@ -791,19 +1077,35 @@ async function playMove(dir, idx){
     renderBoard();
     await wait(240);
   }
+  return {total, chain};
+}
 
-  if (total > 0){
-    state.score[who] += total;
-    setStatus(`<b>${playerName(who)}</b> získává <b>+${total}</b> bodů${chain > 1 ? ` (kombo ×${chain})` : ''}`);
-  }
+function announceScore(who, total, chain){
+  if (total <= 0) return;
+  setStatus(`<b>${playerName(who)}</b> získává <b>+${total}</b> bodů${chain > 1 ? ` (kombo ×${chain})` : ''}`);
+}
+
+async function playMove(dir, idx){
+  if (!canPlay()) return;
+  if (ONLINE.db) return onlineMove(dir, idx);
+
+  state.busy = true;
+  setArrows(false);
+  const who = state.turn;
+  const sym = state.queue[0];
+
+  const { total, chain } = await runMoveAnimation(dir, idx, sym);
+  state.score[who] += total;
+  announceScore(who, total, chain);
 
   state.queue.shift();
   state.queue.push(randSym());
   renderPanels();
 
-  const diff = Math.abs(state.score[0] - state.score[1]);
-  if (diff >= WIN_DIFF){ endGame(state.score[0] > state.score[1] ? 0 : 1); return; }
-
+  if (Math.abs(state.score[0] - state.score[1]) >= WIN_DIFF){
+    endGame(state.score[0] > state.score[1] ? 0 : 1);
+    return;
+  }
   if (total > 0) await wait(700);
 
   state.turn = 1 - who;
@@ -814,11 +1116,7 @@ async function playMove(dir, idx){
   setArrows(true);
 }
 
-function endGame(winner){
-  state.over = true;
-  state.busy = true;
-  setArrows(false);
-  renderPanels();
+function showWinner(winner){
   Snd.win();
   const name = playerName(winner);
   $('ovIcon').textContent = '🦙';
@@ -828,6 +1126,14 @@ function endGame(winner){
     `Konečné skóre: <b>${state.score[0]} : ${state.score[1]}</b>`;
   $('over').hidden = false;
   setStatus(`🏆 <b>${name}</b> vyhrál hru`);
+}
+
+function endGame(winner){
+  state.over = true;
+  state.busy = true;
+  renderPanels();
+  showWinner(winner);
+  refreshControls();
 }
 
 /* ============================================================
@@ -849,7 +1155,12 @@ function newGame(){
   renderQueue();
   renderPanels();
   updateStatus();
-  setArrows(true);
+  refreshControls();
+}
+
+function startGame(){
+  if (ONLINE.db) newOnlineGame();
+  else newGame();
 }
 
 function buildGrid(){
@@ -875,8 +1186,8 @@ function buildPaytable(){
 }
 
 /* --- ovládání --- */
-$('newBtn').addEventListener('click', newGame);
-$('ovBtn').addEventListener('click', newGame);
+$('newBtn').addEventListener('click', startGame);
+$('ovBtn').addEventListener('click', startGame);
 $('sndBtn').addEventListener('click', e => {
   Snd.on = !Snd.on;
   e.currentTarget.textContent = Snd.on ? '🔊' : '🔇';
@@ -902,6 +1213,11 @@ buildPaytable();
 newGame();
 measure();
 new ResizeObserver(measure).observe($('board'));
+
+// Stránka běží i sama; online se rozsvítí, až (a jestli) se capability ozve.
+if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function'){
+  initOnline().catch(() => {});
+}
 </script>
 </body>
 </html>
