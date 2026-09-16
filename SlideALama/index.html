@@ -62,6 +62,9 @@
   .seatbtn:hover{background:#3a1f33;border-color:#a04d77}
   .seatbtn.join{border-color:#2f6b52;color:#b6f2d6}
   .seatbtn.join:hover{background:#17342a;border-color:#3e9c74}
+  .kickbtn{border-color:#5a3a2a;color:#ffd0b0}
+  .kickbtn:hover{background:#3a2419;border-color:#9c6036}
+  .kickbtn.armed{background:#7a2020;border-color:#e05252;color:#fff}
 
   /* ---------- online lišta ---------- */
   .netbar{
@@ -279,6 +282,7 @@
       <button class="btn" id="sndBtn" title="Zvuk">🔊</button>
       <button class="btn" id="newBtn">↻ Nová hra</button>
       <button class="btn seatbtn" id="seatBtn" hidden></button>
+      <button class="btn kickbtn" id="kickBtn" hidden></button>
     </div>
   </header>
 
@@ -801,6 +805,7 @@ const ONLINE = {
   seats: {},
   seq: -1,
   pending: null,   // poslední dokument čekající na dohrání animace
+  flash: null,     // jednorázová hláška (např. že mě někdo vyhodil)
   unsub: [],
 };
 
@@ -830,16 +835,6 @@ function decodeBoard(str){
   }
   return b;
 }
-
-/** Stav hry jako tělo dokumentu. */
-const packState = (extra = {}) => Object.assign({
-  seq: ONLINE.seq,
-  board: encodeBoard(state.board),
-  queue: state.queue.slice(),
-  score: state.score.slice(),
-  turn: state.turn,
-  over: state.over,
-}, extra);
 
 function freshGameDoc(){
   const board = randomStartBoard();
@@ -888,7 +883,15 @@ async function initOnline(){
   }
 
   ONLINE.unsub.push(db.doc(SEATS_PATH).onSnapshot(
-    snap => { ONLINE.seats = snap.exists ? snap.data() : {}; refreshControls(); },
+    snap => {
+      ONLINE.seats = snap.exists ? snap.data() : {};
+      // někdo mohl uvolnit moje místo — držím ho jen tehdy, když na něm pořád stojím
+      if (ONLINE.seat !== null && ONLINE.seats['p' + ONLINE.seat] !== ONLINE.me){
+        ONLINE.seat = null;
+        ONLINE.flash = 'Někdo tě odsud odhlásil.';
+      }
+      refreshControls();
+    },
     () => setOnlineNote('Spojení se přerušilo, načti stránku znovu.')
   ));
 
@@ -1054,6 +1057,39 @@ async function joinSeat(){
 }
 
 function freeSeatAvailable(){ return !ONLINE.seats.p0 || !ONLINE.seats.p1; }
+function anySeatTaken(){ return !!(ONLINE.seats.p0 || ONLINE.seats.p1); }
+function otherSeatTaken(){
+  return ONLINE.seat !== null && !!ONLINE.seats['p' + (1 - ONLINE.seat)];
+}
+
+/**
+ * Uvolní cizí místo. Hráč tím vyhodí soupeře, divák uvolní obě místa —
+ * jinak by se k zaseknuté hře nikdo nedostal, protože „Opustit hru" umí
+ * uvolnit jen místo vlastní.
+ */
+async function kickOthers(){
+  if (!ONLINE.db) return;
+  const ref = ONLINE.db.doc(SEATS_PATH);
+  try {
+    const cur = (await ref.get()).data() || {};
+    const body = Object.assign({}, cur);
+    if (ONLINE.seat === null){ body.p0 = null; body.p1 = null; }
+    else body['p' + (1 - ONLINE.seat)] = null;
+    await ref.set(body);
+  } catch (e) {
+    ONLINE.flash = 'Místa se nepodařilo uvolnit, zkus to znovu.';
+  }
+  refreshControls();
+}
+
+/** Dvoukrokové potvrzení — první klik varuje, druhý do 4 s vyhodí. */
+let kickArmed = 0;
+function armKick(){
+  if (Date.now() < kickArmed){ kickArmed = 0; kickOthers(); return; }
+  kickArmed = Date.now() + 4000;
+  refreshControls();
+  setTimeout(() => { if (kickArmed && Date.now() >= kickArmed){ kickArmed = 0; refreshControls(); } }, 4100);
+}
 
 /* --- kdo smí hrát --- */
 function bothSeated(){ return !!(ONLINE.seats.p0 && ONLINE.seats.p1); }
@@ -1096,6 +1132,20 @@ function refreshControls(){
   }
   $('newBtn').disabled = ONLINE.seat === null;
 
+  const kick = $('kickBtn');
+  const canKick = ONLINE.seat !== null ? otherSeatTaken() : anySeatTaken();
+  kick.hidden = !canKick;
+  if (canKick){
+    const armed = Date.now() < kickArmed;
+    kick.classList.toggle('armed', armed);
+    kick.textContent = armed ? '⚠ Opravdu uvolnit?'
+      : (ONLINE.seat !== null ? '⨯ Vyhodit soupeře' : '⨯ Uvolnit obě místa');
+    kick.title = ONLINE.seat !== null
+      ? 'Uvolní místo soupeře — třeba když se už nevrátí'
+      : 'Uvolní obě místa, aby se dalo začít znovu';
+  }
+
+  if (ONLINE.flash){ setOnlineNote(ONLINE.flash); ONLINE.flash = null; return; }
   if (ONLINE.seat === null) setOnlineNote('Obě místa jsou obsazená — koukáš se.');
   else if (!bothSeated()) setOnlineNote('Čeká se na druhého hráče. Pošli mu odkaz na tuhle stránku.');
   else if (state.over) setOnlineNote('Hra skončila.');
@@ -1252,6 +1302,7 @@ function buildPaytable(){
 $('seatBtn').addEventListener('click', () => {
   if (ONLINE.seat === null) joinSeat(); else leaveSeat();
 });
+$('kickBtn').addEventListener('click', armKick);
 $('newBtn').addEventListener('click', startGame);
 $('ovBtn').addEventListener('click', startGame);
 $('sndBtn').addEventListener('click', e => {

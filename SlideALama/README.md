@@ -13,8 +13,14 @@ střídáte se v tazích. Žádný build ani server.
 Kdo otevře odkaz, sedne si na volné místo (hráč 1 / hráč 2), třetí příchozí se
 jen dívá. Tahy se propisují živě přes jeden sdílený dokument.
 
-Vpravo nahoře je tlačítko **Opustit hru** — uvolní tvoje místo, aby si na něj mohl
-sednout někdo jiný. Kdo místo nemá a některé je volné, uvidí místo toho **Sednout si**.
+Vpravo nahoře jsou dvě tlačítka na správu míst:
+
+- **Opustit hru** uvolní tvoje vlastní místo. Kdo místo nemá a některé je volné,
+  vidí místo toho **Sednout si**.
+- **Vyhodit soupeře** uvolní místo toho druhého — na to, když se už nevrátí.
+  Divákovi se nabídne jako **Uvolnit obě místa**, aby se dala zaseknutá hra rozseknout.
+  Vyhazování je nevratné, takže první klik jen varuje a druhý (do čtyř sekund) potvrzuje.
+  Vyhozený se dozví, že ho někdo odhlásil.
 
 Stejný soubor zvládne obojí: online vrstva se zapne, jen když je `db` k dispozici,
 jinak stránka zůstane u hry pro dva na jednom zařízení.
