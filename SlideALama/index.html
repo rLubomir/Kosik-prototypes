@@ -58,6 +58,11 @@
   .btn:hover{background:var(--panel2);border-color:#5a4490}
   .btn:active{transform:translateY(1px)}
   .btn.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#2a1a00;border-color:transparent}
+  .seatbtn{border-color:#6b3a5a;color:#ffc2d8}
+  .seatbtn:hover{background:#3a1f33;border-color:#a04d77}
+  .seatbtn.join{border-color:#2f6b52;color:#b6f2d6}
+  .seatbtn.join:hover{background:#17342a;border-color:#3e9c74}
+
   .who{
     display:flex;align-items:center;font-size:12px;font-weight:600;color:var(--muted);
     background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 14px;
@@ -272,6 +277,7 @@
       <span class="who">👥 Hra pro dva — střídáte se u jedné obrazovky</span>
       <button class="btn" id="sndBtn" title="Zvuk">🔊</button>
       <button class="btn" id="newBtn">↻ Nová hra</button>
+      <button class="btn seatbtn" id="seatBtn" hidden></button>
     </div>
   </header>
 
@@ -1008,6 +1014,40 @@ function endGameOnline(d){
   refreshControls();
 }
 
+/** Uvolní místo tohoto hráče, aby si na něj mohl sednout někdo jiný. */
+async function leaveSeat(){
+  if (!ONLINE.db || ONLINE.seat === null) return;
+  const ref = ONLINE.db.doc(SEATS_PATH);
+  try {
+    const cur = (await ref.get()).data() || {};
+    const body = Object.assign({}, cur);
+    if (body['p' + ONLINE.seat] === ONLINE.me) body['p' + ONLINE.seat] = null;
+    await ref.set(body);
+  } catch (e) {
+    setOnlineNote('Místo se nepodařilo uvolnit, zkus to znovu.');
+    return;
+  }
+  ONLINE.seat = null;
+  refreshControls();
+}
+
+/** Sedne si na volné místo (návrat po odchodu, nebo po někom, kdo hru opustil). */
+async function joinSeat(){
+  if (!ONLINE.db || ONLINE.seat !== null) return;
+  try {
+    await claimSeat();
+    if (ONLINE.seat === 0){
+      const cur = await ONLINE.db.doc(STATE_PATH).get();
+      if (!cur.exists) await ONLINE.db.doc(STATE_PATH).set(freshGameDoc());
+    }
+  } catch (e) {
+    setOnlineNote('Místo se nepodařilo zabrat, zkus to znovu.');
+  }
+  refreshControls();
+}
+
+function freeSeatAvailable(){ return !ONLINE.seats.p0 || !ONLINE.seats.p1; }
+
 /* --- kdo smí hrát --- */
 function bothSeated(){ return !!(ONLINE.seats.p0 && ONLINE.seats.p1); }
 function canPlay(){
@@ -1032,6 +1072,22 @@ function refreshControls(){
   const seatName = ONLINE.seat === null ? 'divák' : `hráč ${ONLINE.seat + 1}`;
   $('netSeat').textContent = seatName;
   bar.classList.toggle('waiting', !bothSeated());
+
+  const btn = $('seatBtn');
+  if (ONLINE.seat !== null){
+    btn.hidden = false;
+    btn.className = 'btn seatbtn';
+    btn.textContent = '⎋ Opustit hru';
+    btn.title = 'Uvolní tvoje místo, aby si mohl sednout někdo jiný';
+  } else if (freeSeatAvailable()){
+    btn.hidden = false;
+    btn.className = 'btn seatbtn join';
+    btn.textContent = '↩ Sednout si';
+    btn.title = 'Zabere volné místo a začneš hrát';
+  } else {
+    btn.hidden = true;
+  }
+  $('newBtn').disabled = ONLINE.seat === null;
 
   if (ONLINE.seat === null) setOnlineNote('Obě místa jsou obsazená — koukáš se.');
   else if (!bothSeated()) setOnlineNote('Čeká se na druhého hráče. Pošli mu odkaz na tuhle stránku.');
@@ -1186,6 +1242,9 @@ function buildPaytable(){
 }
 
 /* --- ovládání --- */
+$('seatBtn').addEventListener('click', () => {
+  if (ONLINE.seat === null) joinSeat(); else leaveSeat();
+});
 $('newBtn').addEventListener('click', startGame);
 $('ovBtn').addEventListener('click', startGame);
 $('sndBtn').addEventListener('click', e => {
