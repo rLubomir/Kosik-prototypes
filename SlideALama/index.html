@@ -151,6 +151,14 @@
     --cell:44px;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;opacity:.82;
     box-shadow:0 0 0 1px #0004 inset;
   }
+  /* rámeček prozradí, kterému hráči kámen padne */
+  .cur,.mini{border:3px solid transparent;transition:.25s border-color,.25s box-shadow}
+  .own0{border-color:var(--a)}
+  .own1{border-color:var(--b)}
+  .cur.own0{box-shadow:0 0 0 2px #fff2 inset,0 0 18px -3px var(--a),0 10px 26px -12px #000}
+  .cur.own1{box-shadow:0 0 0 2px #fff2 inset,0 0 18px -3px var(--b),0 10px 26px -12px #000}
+  .mini.own0{box-shadow:0 0 0 1px #0004 inset,0 0 12px -4px var(--a)}
+  .mini.own1{box-shadow:0 0 0 1px #0004 inset,0 0 12px -4px var(--b)}
 
   .play{
     display:grid;
@@ -735,13 +743,19 @@ function renderPanels(){
 }
 
 /* --- fronta kamenů --- */
+/** Kameny se ve frontě střídají, takže vlastník i-tého je (kdo je na tahu + i) % 2. */
+const queueOwner = i => (state.turn + i) % 2;
+
 function renderQueue(){
-  paintSwatch($('curTile'), state.queue[0]);
+  const cur = $('curTile');
+  cur.className = 'cur own' + queueOwner(0);
+  paintSwatch(cur, state.queue[0]);
+
   const box = $('qNext');
   box.innerHTML = '';
   for (let i = 1; i <= 2; i++){
     const d = document.createElement('div');
-    d.className = 'mini';
+    d.className = 'mini own' + queueOwner(i);
     paintSwatch(d, state.queue[i]);
     box.appendChild(d);
   }
