@@ -63,12 +63,6 @@
   .seatbtn.join{border-color:#2f6b52;color:#b6f2d6}
   .seatbtn.join:hover{background:#17342a;border-color:#3e9c74}
 
-  .who{
-    display:flex;align-items:center;font-size:12px;font-weight:600;color:var(--muted);
-    background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 14px;
-  }
-  @media (max-width:560px){ .who{display:none} }
-
   /* ---------- online lišta ---------- */
   .netbar{
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -282,7 +276,6 @@
   <header>
     <h1>🦙 Slide-a-Lama <span class="sub">Slots</span></h1>
     <div class="tools">
-      <span class="who">👥 Hra pro dva — střídáte se u jedné obrazovky</span>
       <button class="btn" id="sndBtn" title="Zvuk">🔊</button>
       <button class="btn" id="newBtn">↻ Nová hra</button>
       <button class="btn seatbtn" id="seatBtn" hidden></button>
