@@ -84,23 +84,10 @@
     content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--pc);opacity:.5;
   }
   .player.p0{--pc:var(--a)} .player.p1{--pc:var(--b)}
-  .player.active{border-color:var(--pc);box-shadow:0 0 0 1px var(--pc),0 12px 34px -16px var(--pc)}
-  .player.active::before{opacity:1}
   .pname{color:var(--ink);font-size:15px;font-weight:800;padding:2px 0 4px;letter-spacing:.3px}
-  .pturn{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--pc);height:13px;font-weight:700}
   .score{font-size:34px;font-weight:800;line-height:1.1;margin:2px 0 1px;font-variant-numeric:tabular-nums}
   .score small{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:1px}
-  .llamas{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:10px}
-  .llama{
-    font-size:clamp(12px,2vw,20px);line-height:1.25;text-align:center;
-    filter:grayscale(1) opacity(.22);
-    transition:.45s filter,.45s transform;
-  }
-  .llama.mine{filter:none;transform:scale(1.06)}
-  .llama.just{animation:pop .5s ease}
-  @keyframes pop{0%{transform:scale(1.06)}40%{transform:scale(1.7) rotate(-12deg)}100%{transform:scale(1.06)}}
-  /* u druhého hráče se lamy i ukazatel plní od středu desky, ať je přetahovaná čitelná */
-  .p1 .llamas{direction:rtl}
+  /* ukazatel druhého hráče roste od středu desky, ať je přetahovaná čitelná */
   .meter{height:6px;border-radius:99px;background:#170f2b;margin-top:10px;overflow:hidden;border:1px solid #2c2049}
   .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--pc),#fff8);width:0;transition:.5s width}
   .p1 .meter{transform:scaleX(-1)}
@@ -108,10 +95,13 @@
 
   /* ---------- center / board ---------- */
   .center{display:flex;flex-direction:column;gap:12px;align-items:center}
+  /* rámeček a záře v barvě hráče na tahu — informace o tahu je tak celá u kamenů */
   .queue{
     display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:12px 16px;width:100%;justify-content:center;
+    transition:.25s border-color,.25s box-shadow;
   }
+  .queue.live{border-color:var(--tc);box-shadow:0 0 0 1px var(--tc),0 12px 34px -16px var(--tc)}
   /* text se nesmí roztahovat (jinak odtlačí kameny doprava), zato se smí smrsknout
      a zalomit do dvou řádků — díky tomu zůstane vedle kamenů i na úzké obrazovce */
   .turnbig{
@@ -273,16 +263,14 @@
 
   <div class="stage">
     <div class="player p0" id="pan0">
-      <div class="pturn" id="turn0">na tahu</div>
       <div class="pname" id="name0">Hráč 1</div>
       <div class="score"><span id="sc0">0</span> <small>BODŮ</small></div>
-      <div class="llamas" id="ll0"></div>
       <div class="meter"><i id="mt0"></i></div>
       <div class="hint" id="hint0">do vedení chybí 300</div>
     </div>
 
     <div class="center">
-      <div class="queue">
+      <div class="queue" id="queueBox">
         <div class="turnbig" id="turnBig">Jsi na tahu</div>
         <div class="cur" id="curTile"></div>
         <span class="qsep" aria-hidden="true"></span>
@@ -304,10 +292,8 @@
     </div>
 
     <div class="player p1" id="pan1">
-      <div class="pturn" id="turn1">na tahu</div>
       <div class="pname" id="name1">Hráč 2</div>
       <div class="score"><span id="sc1">0</span> <small>BODŮ</small></div>
-      <div class="llamas" id="ll1"></div>
       <div class="meter"><i id="mt1"></i></div>
       <div class="hint" id="hint1">do vedení chybí 300</div>
     </div>
@@ -674,6 +660,8 @@ function flyEject(tile, dir, idx){
 /* --- panely hráčů --- */
 function renderPanels(){
   const diff = state.score[0] - state.score[1];
+  // Lamy se nekreslí, ale pořád platí jako pravidlo: každých 60 bodů náskoku je jedna.
+  // Přeběhnutí je milník, který stojí za zvuk — vidět je na ukazateli postupu.
   const d = Math.max(-LLAMAS, Math.min(LLAMAS, Math.trunc(diff / LLAMA_STEP)));
   const changed = d !== state.llamaDiff;
   state.llamaDiff = d;
@@ -682,28 +670,6 @@ function renderPanels(){
   renderNames();
   for (const p of [0, 1]){
     $('sc' + p).textContent = state.score[p];
-    $('pan' + p).classList.toggle('active', state.turn === p && !state.over);
-    $('turn' + p).style.visibility = (state.turn === p && !state.over) ? 'visible' : 'hidden';
-
-    const mine = p === 0 ? LLAMAS + d : LLAMAS - d;
-    const box = $('ll' + p);
-    if (box.children.length !== LLAMAS * 2){
-      box.innerHTML = '';
-      for (let i = 0; i < LLAMAS * 2; i++){
-        const s = document.createElement('span');
-        s.className = 'llama'; s.textContent = '🦙';
-        box.appendChild(s);
-      }
-    }
-    [...box.children].forEach((el, i) => {
-      const was = el.classList.contains('mine');
-      const now = i < mine;
-      el.classList.toggle('mine', now);
-      if (was !== now && now && changed){
-        el.classList.add('just');
-        setTimeout(()=> el.classList.remove('just'), 520);
-      }
-    });
 
     const lead = p === 0 ? diff : -diff;
     const pct = Math.max(0, Math.min(100, (lead / WIN_DIFF) * 100));
@@ -775,6 +741,12 @@ function renderTurnLabel(){
   }
   el.textContent = text;
   el.style.setProperty('--tc', colour || 'var(--muted)');
+
+  const box = $('queueBox');
+  if (box){
+    box.style.setProperty('--tc', colour || 'transparent');
+    box.classList.toggle('live', !!colour);
+  }
 }
 
 function updateStatus(){

@@ -12,8 +12,8 @@ střídáte se v tazích. Žádný build ani server.
 **Online** — tatáž stránka publikovaná jako Claude Artifact se schopností `db`.
 Kdo otevře odkaz, sedne si na volné místo, třetí příchozí se jen dívá. Tahy se
 propisují živě přes jeden sdílený dokument. Panely jsou popsané **Ty** a **Soupeř**
-podle toho, na kterém místě sedíš; velký text vedle kamene říká, kdo je na tahu
-(nebo že se čeká na soupeře, případně že se jen koukáš).
+podle toho, na kterém místě sedíš. Kdo je na tahu, hlásí box s kameny: velkým textem
+a rámečkem v barvě toho hráče.
 
 Vpravo nahoře jsou dvě tlačítka na správu míst:
 
@@ -49,9 +49,10 @@ Jména hráčů jdou přepsat kliknutím na ně.
 
 ## Pravidla
 
-**Cíl.** Na stole je 10 lam, každý hráč má na začátku 5. Za **každých 60 bodů náskoku**
-před soupeřem k tobě přeběhne jedna jeho lama. Kdo získá všech 10 lam — tedy náskok
-**300 bodů** — vyhrává. Dokud se náskok mění, lamy se můžou vracet zpátky.
+**Cíl.** Vyhrává ten, kdo získá nad soupeřem náskok **300 bodů**. Vychází to z původního
+pravidla: každý hráč má 5 lam a za každých 60 bodů náskoku k tobě jedna soupeřova přeběhne,
+takže 300 bodů je všech deset. Lamy se nekreslí — postup k výhře ukazuje pruh pod skóre
+a text pod ním.
 
 **Tah.** Hraje se na desce 5×5, která je na začátku už **částečně zaplněná náhodnými kameny**
 (zhruba 60 % plochy) — nikdy ale tak, aby na startu ležela hotová trojice, takže první tah
