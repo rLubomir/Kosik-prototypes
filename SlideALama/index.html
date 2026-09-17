@@ -253,6 +253,11 @@
   .card .big{font-size:56px;margin-bottom:6px}
   .card h2{margin:0 0 6px;font-size:24px}
   .card p{color:var(--muted);margin:0 0 20px;font-size:14px;line-height:1.6}
+  .card .roomurl{
+    width:100%;margin:0 0 14px;padding:11px 12px;border-radius:11px;
+    border:1px solid var(--line);background:#160f2b;color:var(--ink);
+    font-family:inherit;font-size:13px;text-align:center;
+  }
 </style>
 </head>
 <body>
@@ -266,6 +271,7 @@
       <div class="actions" id="actions">
         <button class="btn" id="sndBtn" title="Zvuk">🔊</button>
         <button class="btn" id="newBtn">↻ Nová hra</button>
+        <button class="btn" id="roomBtn" hidden>✦ Nová místnost</button>
         <button class="btn seatbtn" id="seatBtn" hidden></button>
         <button class="btn kickbtn" id="kickBtn" hidden></button>
       </div>
@@ -346,6 +352,16 @@
       a tak pořád dokola. Celý řetěz padá na účet hráče, který tah zahrál.</p>
     </div>
   </details>
+</div>
+
+<div class="over" id="roomOver" hidden>
+  <div class="card">
+    <div class="big">🔗</div>
+    <h2>Nová místnost</h2>
+    <p>Pošli tenhle odkaz kamarádovi — kdo ho otevře, sedne si naproti tobě.</p>
+    <input class="roomurl" id="roomUrl" readonly>
+    <button class="btn on" id="roomCopy">Kopírovat adresu</button>
+  </div>
 </div>
 
 <div class="over" id="over" hidden>
@@ -1142,6 +1158,56 @@ async function joinSeat(){
   refreshControls();
 }
 
+/* ============================================================
+   Nová místnost
+   ------------------------------------------------------------
+   Místnost se čte z adresy při načtení stránky, takže přesun do nové znamená
+   načíst ji znovu. Než se tak stane, uvolní se místo v té staré — jinak by
+   v ní zůstalo obsazené, dokud ho někdo nevyhodí.
+   ============================================================ */
+const ROOM_CHARS = 'abcdefghijkmnpqrstuvwxyz23456789';  // bez znaků, co se pletou (l/I, o/0)
+function newRoomCode(){
+  let out = '';
+  for (let i = 0; i < 4; i++) out += ROOM_CHARS[Math.floor(Math.random() * ROOM_CHARS.length)];
+  return out;
+}
+const roomUrl = code => location.href.split('#')[0] + '#room=' + code;
+
+async function switchToNewRoom(){
+  const url = roomUrl(newRoomCode());
+  // uvolnění místa je zdvořilost, ne podmínka — kdyby se zaseklo, jde se dál
+  await Promise.race([leaveSeat(), wait(1500)]);
+  // adresa se předá přes sessionStorage, po načtení stránky už není odkud ji vzít
+  try { sessionStorage.setItem('sal-new-room', url); } catch (e) {}
+  location.href = url;
+  location.reload();
+}
+
+/** Po příchodu do čerstvě založené místnosti ukáže odkaz, ať je co poslat. */
+function showRoomModalIfFresh(){
+  let url = null;
+  try {
+    url = sessionStorage.getItem('sal-new-room');
+    sessionStorage.removeItem('sal-new-room');
+  } catch (e) {}
+  if (!url) return;
+  $('roomUrl').value = url;
+  $('roomOver').hidden = false;
+  $('roomUrl').select();
+}
+
+async function copyRoomUrl(){
+  const input = $('roomUrl');
+  input.select();
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch (e) {
+    // bez https (a ve starších prohlížečích) clipboard API není — zbyde výběr textu
+    try { document.execCommand('copy'); } catch (e2) {}
+  }
+  $('roomOver').hidden = true;
+}
+
 function freeSeatAvailable(){ return !ONLINE.seats.p0 || !ONLINE.seats.p1; }
 function anySeatTaken(){ return !!(ONLINE.seats.p0 || ONLINE.seats.p1); }
 function otherSeatTaken(){
@@ -1194,6 +1260,8 @@ function refreshControls(){
   renderTurnLabel();
   renderNames();
   if (!ONLINE.db) return;
+
+  $('roomBtn').hidden = false;
 
   const btn = $('seatBtn');
   if (ONLINE.seat !== null){
@@ -1409,17 +1477,28 @@ $('menuBtn').addEventListener('click', e => {
   setMenuOpen(!$('actions').classList.contains('open'));
 });
 $('actions').addEventListener('click', e => {
-  if (e.target.closest('.btn')) setMenuOpen(false);   // akce menu zavře
+  const btn = e.target.closest('.btn');
+  if (!btn) return;
+  // Vyhození se potvrzuje druhým klepnutím, takže po tom prvním musí menu zůstat
+  // otevřené — jinak by na úzké obrazovce nebylo na co klepnout.
+  if (btn.id === 'kickBtn' && Date.now() < kickArmed) return;
+  setMenuOpen(false);                                 // ostatní akce menu zavřou
 });
 document.addEventListener('click', e => {
   if (!e.target.closest('#tools')) setMenuOpen(false);
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenuOpen(false); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  setMenuOpen(false);
+  $('roomOver').hidden = true;
+});
 
 $('seatBtn').addEventListener('click', () => {
   if (ONLINE.seat === null) joinSeat(); else leaveSeat();
 });
 $('kickBtn').addEventListener('click', armKick);
+$('roomBtn').addEventListener('click', switchToNewRoom);
+$('roomCopy').addEventListener('click', copyRoomUrl);
 $('newBtn').addEventListener('click', startGame);
 $('ovBtn').addEventListener('click', startGame);
 $('sndBtn').addEventListener('click', e => {
@@ -1446,6 +1525,7 @@ buildPaytable();
 newGame();
 measure();
 layoutHeader();
+showRoomModalIfFresh();
 new ResizeObserver(measure).observe($('board'));
 // sledovat hlavičku přes ResizeObserver nejde — layoutHeader mění její výšku a
 // pozorovatel by se tím budil dokola; šířka se stejně mění jen se šířkou okna

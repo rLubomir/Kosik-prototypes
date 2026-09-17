@@ -19,14 +19,18 @@ Když se tlačítka v hlavičce přestanou vejít vedle názvu, sbalí se pod tl
 Nejsou to kopie — do rozbalovátka se přesunou ta samá tlačítka, takže se jejich stavy
 nemůžou rozejít.
 
-Vpravo nahoře jsou dvě tlačítka na správu míst:
+Vpravo nahoře jsou tlačítka na správu míst a místností:
 
 - **Opustit hru** uvolní tvoje vlastní místo. Kdo místo nemá a některé je volné,
   vidí místo toho **Sednout si**.
 - **Vyhodit soupeře** uvolní místo toho druhého — na to, když se už nevrátí.
   Divákovi se nabídne jako **Uvolnit obě místa**, aby se dala zaseknutá hra rozseknout.
   Vyhazování je nevratné, takže první klik jen varuje a druhý (do čtyř sekund) potvrzuje.
-  Vyhozený se dozví, že ho někdo odhlásil.
+  Vyhozený se dozví, že ho někdo odhlásil. (V rozbalovátku na úzké obrazovce zůstává
+  menu po prvním kliknutí otevřené, aby bylo na co potvrzovat.)
+- **Nová místnost** vylosuje čtyřznakový kód, uvolní tvoje dosavadní místo a načte
+  hru znovu už v nové místnosti. Odkaz se rovnou nabídne v okně s tlačítkem
+  **Kopírovat adresu** — to ho uloží do schránky a okno zavře.
 
 Stejný soubor zvládne obojí: online vrstva se zapne, jen když je `db` k dispozici,
 jinak stránka zůstane u hry pro dva na jednom zařízení.
@@ -74,8 +78,9 @@ jsou schválně jednoduchá: kdo zná adresu databáze, může do těch dvou uzl
 Pro hru mezi dvěma lidmi to stačí; kdyby ti to vadilo, jde to utáhnout přihlášením.
 
 **Místnosti.** Odkaz s `#room=nejaky-kod` hraje zvlášť od ostatních — hodí se, když
-je stránka veřejná a nechceš, aby ti do partie vlezl někdo cizí. Bez místnosti se
-všichni potkávají ve společné `main`. Není to zabezpečení, jen oddělení partií.
+je stránka veřejná a nechceš, aby ti do partie vlezl někdo cizí. Kód si buď vymyslíš
+sám, nebo ho necháš vylosovat tlačítkem **Nová místnost**. Bez místnosti se všichni
+potkávají ve společné `main`. Není to zabezpečení, jen oddělení partií.
 
 ## Spuštění
 
