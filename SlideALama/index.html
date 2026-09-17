@@ -43,12 +43,22 @@
     -webkit-background-clip:text;background-clip:text;color:transparent;
     display:flex;align-items:center;gap:10px;
   }
-  h1 .sub{
-    font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:var(--muted);
-    background:none;-webkit-text-fill-color:var(--muted);
-    border:1px solid var(--line);border-radius:999px;padding:4px 10px;
+  /* Tlačítka jsou pořád tatáž — v úzké hlavičce se jen přestěhují pod tlačítko „⋯",
+     takže se jejich stavy (popisky, zakázání) nemůžou rozejít s duplikátem. */
+  .tools{position:relative;display:flex;gap:8px;align-items:center}
+  .actions{display:flex;gap:8px}
+  .dots{display:none;font-size:17px;line-height:1;padding:7px 12px}
+  header.compact .actions{
+    display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:20;
+    flex-direction:column;align-items:stretch;min-width:190px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    padding:8px;box-shadow:0 18px 40px -14px #000;
   }
-  .tools{display:flex;gap:8px;flex-wrap:wrap}
+  header.compact .actions.open{display:flex}
+  header.compact .actions .btn{width:100%;text-align:left}
+  /* v menu samotná ikona nestačí — popisek je pseudo-prvek, takže přepínání 🔊/🔇 nepřepíše */
+  header.compact .actions #sndBtn::after{content:" Zvuk"}
+  header.compact .dots{display:block}
   button{font-family:inherit}
   .btn{
     background:var(--panel);color:var(--ink);border:1px solid var(--line);
@@ -252,12 +262,16 @@
 <div class="wrap">
 
   <header>
-    <h1>🦙 Slide-a-Lama <span class="sub">Slots</span></h1>
-    <div class="tools">
-      <button class="btn" id="sndBtn" title="Zvuk">🔊</button>
-      <button class="btn" id="newBtn">↻ Nová hra</button>
-      <button class="btn seatbtn" id="seatBtn" hidden></button>
-      <button class="btn kickbtn" id="kickBtn" hidden></button>
+    <h1>🦙 Slide-a-Lama</h1>
+    <div class="tools" id="tools">
+      <button class="btn dots" id="menuBtn" aria-expanded="false" aria-haspopup="true"
+              aria-label="Akce">⋯</button>
+      <div class="actions" id="actions">
+        <button class="btn" id="sndBtn" title="Zvuk">🔊</button>
+        <button class="btn" id="newBtn">↻ Nová hra</button>
+        <button class="btn seatbtn" id="seatBtn" hidden></button>
+        <button class="btn kickbtn" id="kickBtn" hidden></button>
+      </div>
     </div>
   </header>
 
@@ -1127,6 +1141,7 @@ function refreshControls(){
   }
 
   if (ONLINE.flash){ setOnlineNote(ONLINE.flash); ONLINE.flash = null; }
+  layoutHeader();                 // přibylo/ubylo tlačítko → přeměř hlavičku
 }
 
 /* ============================================================
@@ -1279,6 +1294,44 @@ function buildPaytable(){
 }
 
 /* --- ovládání --- */
+/**
+ * Rozhodne, jestli se tlačítka vejdou vedle loga. Měří se jejich přirozená šířka
+ * v rozbaleném stavu — kdyby se rozhodovalo podle toho, že se zalomila, schování
+ * by hlavičku zase zúžilo a stav by poskakoval tam a zpět.
+ */
+function layoutHeader(){
+  const header = document.querySelector('header');
+  const h1 = header.querySelector('h1');
+  const actions = $('actions');
+  const wasOpen = actions.classList.contains('open');
+
+  header.classList.remove('compact');
+  actions.classList.remove('open');
+  const needed = h1.scrollWidth + actions.scrollWidth + 14;
+  const compact = needed > header.clientWidth;
+
+  header.classList.toggle('compact', compact);
+  if (compact && wasOpen) actions.classList.add('open');
+  if (!compact) setMenuOpen(false);
+}
+
+function setMenuOpen(open){
+  $('actions').classList.toggle('open', open);
+  $('menuBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+$('menuBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  setMenuOpen(!$('actions').classList.contains('open'));
+});
+$('actions').addEventListener('click', e => {
+  if (e.target.closest('.btn')) setMenuOpen(false);   // akce menu zavře
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('#tools')) setMenuOpen(false);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenuOpen(false); });
+
 $('seatBtn').addEventListener('click', () => {
   if (ONLINE.seat === null) joinSeat(); else leaveSeat();
 });
@@ -1308,7 +1361,11 @@ buildArrows();
 buildPaytable();
 newGame();
 measure();
+layoutHeader();
 new ResizeObserver(measure).observe($('board'));
+// sledovat hlavičku přes ResizeObserver nejde — layoutHeader mění její výšku a
+// pozorovatel by se tím budil dokola; šířka se stejně mění jen se šířkou okna
+window.addEventListener('resize', layoutHeader);
 
 // Stránka běží i sama; online se rozsvítí, až (a jestli) se capability ozve.
 if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function'){

@@ -15,6 +15,10 @@ propisují živě přes jeden sdílený dokument. Panely jsou popsané **Ty** a 
 podle toho, na kterém místě sedíš. Kdo je na tahu, hlásí box s kameny: velkým textem
 a rámečkem v barvě toho hráče.
 
+Když se tlačítka v hlavičce přestanou vejít vedle názvu, sbalí se pod tlačítko **⋯**.
+Nejsou to kopie — do rozbalovátka se přesunou ta samá tlačítka, takže se jejich stavy
+nemůžou rozejít.
+
 Vpravo nahoře jsou dvě tlačítka na správu míst:
 
 - **Opustit hru** uvolní tvoje vlastní místo. Kdo místo nemá a některé je volné,
