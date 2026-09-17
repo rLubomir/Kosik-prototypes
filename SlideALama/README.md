@@ -1,8 +1,8 @@
 # 🦙 Slide-a-Lama — Slots
 
 Kopie herní mechaniky legendární ICQ hry **Slide-a-Lama**, varianta **Slots**.
-Hra pro **dva hráče u jedné obrazovky** — hráči se střídají v tazích na sdílené desce,
-stejně jako v originále.
+Hra pro **dva hráče** — střídají se v tazích na sdílené desce, stejně jako v originále.
+Hrát se dá u jedné obrazovky i online proti sobě.
 
 ## Dva režimy
 
@@ -49,7 +49,6 @@ Kámen vsuneš kliknutím na šipku u okraje desky. Případně klávesnicí:
 | `Q`–`T` | zleva do řádku |
 | `A`–`G` | zprava do řádku |
 
-Jména hráčů jdou přepsat kliknutím na ně.
 
 ## Pravidla
 
