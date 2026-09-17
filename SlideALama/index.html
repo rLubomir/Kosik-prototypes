@@ -110,20 +110,19 @@
   .center{display:flex;flex-direction:column;gap:12px;align-items:center}
   .queue{
     display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
-    border-radius:16px;padding:12px 16px;width:100%;justify-content:center;flex-wrap:wrap;
+    border-radius:16px;padding:12px 16px;width:100%;justify-content:center;
   }
+  /* text se nesmí roztahovat (jinak odtlačí kameny doprava), zato se smí smrsknout
+     a zalomit do dvou řádků — díky tomu zůstane vedle kamenů i na úzké obrazovce */
   .turnbig{
-    flex:1 1 auto;min-width:0;text-align:right;
-    font-size:clamp(15px,2.3vw,20px);font-weight:800;letter-spacing:.2px;line-height:1.25;
+    flex:0 1 auto;min-width:0;text-align:right;text-wrap:balance;
+    font-size:clamp(13px,2vw,17px);font-weight:800;letter-spacing:.2px;line-height:1.25;
     color:var(--tc,var(--muted));transition:.25s color;
   }
-  .qnext{display:flex;gap:8px;align-items:center}
-  @media (max-width:520px){
-    .turnbig{flex:1 0 100%;text-align:center}
-  }
+  .qnext{display:flex;gap:8px;align-items:center;flex:none}
   /* --cell si náhledy nastavují samy, aby velikost symbolu nezávisela na velikosti políček desky */
   .cur{
-    --cell:60px;width:60px;height:60px;border-radius:14px;display:grid;place-items:center;
+    flex:none;--cell:60px;width:60px;height:60px;border-radius:14px;display:grid;place-items:center;
     box-shadow:0 0 0 2px #fff2 inset,0 10px 26px -12px #000;
     animation:breathe 2.4s ease-in-out infinite;
   }
