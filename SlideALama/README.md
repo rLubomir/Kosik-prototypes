@@ -4,7 +4,7 @@ Kopie herní mechaniky legendární ICQ hry **Slide-a-Lama**, varianta **Slots**
 Hra pro **dva hráče** — střídají se v tazích na sdílené desce, stejně jako v originále.
 Hrát se dá u jedné obrazovky i online proti sobě.
 
-## Dva režimy
+## Tři způsoby hraní
 
 **Lokálně** — otevři `index.html` v prohlížeči. Hrajete ve dvou u jedné obrazovky,
 střídáte se v tazích. Žádný build ani server.
@@ -31,9 +31,49 @@ Vpravo nahoře jsou dvě tlačítka na správu míst:
 Stejný soubor zvládne obojí: online vrstva se zapne, jen když je `db` k dispozici,
 jinak stránka zůstane u hry pro dva na jednom zařízení.
 
-> **Pozor:** artifact se schopností `db` je *organization-internal* — každý, kdo ho
-> otevře, musí být přihlášený člen stejné organizace. Na hraní s někým zvenku by
-> bylo potřeba jiné řešení (např. Firebase).
+> **Pozor:** artifact se schopností `db` je *organization-internal* a **nejde sdílet
+> veřejně** — každý, kdo ho otevře, musí být přihlášený člen stejné organizace.
+> Na hraní s někým zvenku slouží varianta s Firebase níž.
+
+**Na vlastním webu (Netlify apod.)** — tatáž stránka, sdílení přes Firebase.
+Odkaz může otevřít kdokoli. Nastavení viz níž; dokud konfigurace chybí, chová se
+stránka jako hra u jedné obrazovky.
+
+## Hraní po síti mimo Claude (Firebase)
+
+Stránka sama o sobě žádný server nemá. Na vlastním hostingu si sdílený stav bere
+z **Firebase Realtime Database** — bezplatné služby, kterou stačí založit a nakonfigurovat,
+nic se nenasazuje.
+
+1. Na <https://console.firebase.google.com> založ projekt (stačí výchozí volby,
+   Google Analytics není potřeba).
+2. V levém menu **Build → Realtime Database → Create Database**. Vyber region
+   (např. `europe-west1`) a spusť v **testovacím režimu**.
+3. V záložce **Rules** nastav, kam smí hra sahat:
+
+   ```json
+   {
+     "rules": {
+       "seats": { ".read": true, ".write": true },
+       "state": { ".read": true, ".write": true }
+     }
+   }
+   ```
+
+4. **Project settings → Your apps → Web app** (ikona `</>`). Zaregistruj aplikaci
+   a zkopíruj objekt `firebaseConfig`.
+5. Vlož ho v `index.html` do konstanty `FIREBASE_CONFIG` (je hned na začátku skriptu,
+   označená komentářem). Podstatná je položka `databaseURL`.
+6. Nahraj soubor na hosting a je hotovo.
+
+**Ty údaje nejsou tajné.** U webových aplikací jsou vždycky veřejné — kdokoli si je
+přečte ve zdroji stránky. Bezpečnost se řeší výhradně pravidly z kroku 3, a ta výše
+jsou schválně jednoduchá: kdo zná adresu databáze, může do těch dvou uzlů zapisovat.
+Pro hru mezi dvěma lidmi to stačí; kdyby ti to vadilo, jde to utáhnout přihlášením.
+
+**Místnosti.** Odkaz s `#room=nejaky-kod` hraje zvlášť od ostatních — hodí se, když
+je stránka veřejná a nechceš, aby ti do partie vlezl někdo cizí. Bez místnosti se
+všichni potkávají ve společné `main`. Není to zabezpečení, jen oddělení partií.
 
 ## Spuštění
 

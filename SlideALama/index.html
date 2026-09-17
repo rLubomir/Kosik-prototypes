@@ -811,8 +811,27 @@ const ONLINE = {
   unsub: [],
 };
 
-const SEATS_PATH = 'match/seats';
-const STATE_PATH = 'match/state';
+/* ============================================================
+   NASTAVENÍ PRO HRANÍ MIMO CLAUDE (Firebase)
+   ------------------------------------------------------------
+   Uvnitř Claude artifactu se sdílení řeší samo a tohle zůstane prázdné.
+   Na vlastním webu (Netlify apod.) sem vlož konfiguraci z Firebase:
+   konzole → Project settings → Your apps → Web app → firebaseConfig.
+   Stačí z ní `databaseURL` (a `apiKey`, `projectId`), klidně vlož celou.
+   Tyhle údaje nejsou tajné — u webových aplikací jsou vždycky veřejné,
+   bezpečnost se řeší pravidly databáze (viz README).
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  // databaseURL: "https://tvuj-projekt-default-rtdb.europe-west1.firebasedatabase.app",
+  // apiKey: "...",
+  // projectId: "...",
+};
+
+/* Místnost odděluje partie: odkaz s #room=neco hraje zvlášť od ostatních.
+   Bez ní se hraje ve společné místnosti „main". */
+const ROOM = (location.hash.match(/room=([A-Za-z0-9_-]{1,32})/) || [, 'main'])[1];
+const SEATS_PATH = `seats/${ROOM}`;
+const STATE_PATH = `state/${ROOM}`;
 
 function clientId(){
   let id = null;
@@ -870,10 +889,72 @@ function adoptDoc(d){
   refreshControls();
 }
 
+/** Doplní na stránku skript a počká, až se načte. */
+function loadScript(src){
+  return new Promise((ok, no) => {
+    const el = document.createElement('script');
+    el.src = src; el.async = true;
+    el.onload = ok;
+    el.onerror = () => no(new Error('nepodařilo se načíst ' + src));
+    document.head.appendChild(el);
+  });
+}
+
+/**
+ * Sdílený stav přes Firebase Realtime Database.
+ * Nabízí stejná čtyři volání jako schopnost `db` v Claude artifactu, takže
+ * zbytek online vrstvy je na tom, odkud stav přichází, nezávislý.
+ */
+async function firebaseDb(){
+  if (!FIREBASE_CONFIG || !FIREBASE_CONFIG.databaseURL) return null;   // nenastaveno
+  const V = '10.12.2';
+  try {
+    if (typeof firebase === 'undefined'){
+      await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-app-compat.js`);
+      await loadScript(`https://www.gstatic.com/firebasejs/${V}/firebase-database-compat.js`);
+    }
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+  } catch (e) {
+    setStatus('Nepodařilo se připojit ke sdílené hře — hraje se jen na tomhle zařízení.', 8000);
+    return null;
+  }
+  const rtdb = firebase.database();
+  const wrap = snap => ({ exists: snap.exists(), data: () => snap.val() });
+
+  return {
+    doc(path){
+      const ref = rtdb.ref(path);
+      return {
+        async get(){ return wrap(await ref.once('value')); },
+        set(body){ return ref.set(body); },
+        onSnapshot(next, error){
+          const cb = ref.on('value', s => next(wrap(s)),
+            e => error && error({ code:'unavailable', message: String(e) }));
+          return () => ref.off('value', cb);
+        },
+        /* Krátká výpůjčka nad vedlejším uzlem — transakce v Realtime Database
+           je atomická, takže dva zájemci o stejné místo se neporaží navzájem. */
+        async acquire({ holder, ttlMs = 30000 }){
+          try {
+            const res = await rtdb.ref(path + '__lease').transaction(cur => {
+              const now = Date.now();
+              if (cur && cur.until > now && cur.by !== holder) return;   // drží někdo jiný
+              return { by: holder, until: now + ttlMs };
+            });
+            return { acquired: !!res.committed };
+          } catch (e) { return { acquired: false }; }
+        },
+      };
+    },
+  };
+}
+
 async function initOnline(){
   let db = null;
-  try { db = await claude.use('db'); } catch (e) { db = null; }
-  if (!db) return;                       // hra zůstává lokální
+  try { db = typeof claude !== 'undefined' && claude.use ? await claude.use('db') : null; }
+  catch (e) { db = null; }
+  if (!db) db = await firebaseDb();      // mimo Claude zkusíme Firebase
+  if (!db) return;                       // ani jedno → hra zůstává lokální
 
   ONLINE.db = db;
   ONLINE.me = clientId();
@@ -915,20 +996,27 @@ async function initOnline(){
 /** Zabere volné místo. Krátká výpůjčka dokumentu brání tomu, aby oba sedli na stejné. */
 async function claimSeat(){
   const ref = ONLINE.db.doc(SEATS_PATH);
-  const now = (await ref.get()).data() || {};
-  if (now.p0 === ONLINE.me) { ONLINE.seat = 0; return; }
-  if (now.p1 === ONLINE.me) { ONLINE.seat = 1; return; }
 
-  const lease = await ref.acquire({ holder: ONLINE.me, ttlMs: 4000 });
-  if (!lease.acquired) return;                    // někdo právě zabírá, zůstáváme divákem
+  // Výpůjčka po prvním hráči chvíli doznívá; kdo dorazí hned po něm, musí to
+  // zkusit znovu, jinak by zbytečně skončil jako divák u volného místa.
+  for (let attempt = 0; attempt < 5; attempt++){
+    const now = (await ref.get()).data() || {};
+    if (now.p0 === ONLINE.me) { ONLINE.seat = 0; return; }
+    if (now.p1 === ONLINE.me) { ONLINE.seat = 1; return; }
 
-  const cur = (await ref.get()).data() || {};
-  const seat = !cur.p0 ? 0 : (!cur.p1 ? 1 : null);
-  if (seat === null) return;
-  const body = Object.assign({}, cur);
-  body['p' + seat] = ONLINE.me;
-  await ref.set(body);
-  ONLINE.seat = seat;
+    const lease = await ref.acquire({ holder: ONLINE.me, ttlMs: 1500 });
+    if (lease.acquired){
+      const cur = (await ref.get()).data() || {};
+      const seat = !cur.p0 ? 0 : (!cur.p1 ? 1 : null);
+      if (seat === null) return;                  // obsazeno oběma → divák
+      const body = Object.assign({}, cur);
+      body['p' + seat] = ONLINE.me;
+      await ref.set(body);
+      ONLINE.seat = seat;
+      return;
+    }
+    await wait(400);                              // někdo právě zabírá
+  }
 }
 
 /** Zpracuje čekající dokument, jakmile doběhne rozehraná animace. */
@@ -1367,10 +1455,8 @@ new ResizeObserver(measure).observe($('board'));
 // pozorovatel by se tím budil dokola; šířka se stejně mění jen se šířkou okna
 window.addEventListener('resize', layoutHeader);
 
-// Stránka běží i sama; online se rozsvítí, až (a jestli) se capability ozve.
-if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function'){
-  initOnline().catch(() => {});
-}
+// Stránka běží i sama; online se rozsvítí, až (a jestli) se ozve Claude nebo Firebase.
+initOnline().catch(() => {});
 </script>
 </body>
 </html>
