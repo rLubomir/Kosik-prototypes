@@ -10,8 +10,10 @@ stejně jako v originále.
 střídáte se v tazích. Žádný build ani server.
 
 **Online** — tatáž stránka publikovaná jako Claude Artifact se schopností `db`.
-Kdo otevře odkaz, sedne si na volné místo (hráč 1 / hráč 2), třetí příchozí se
-jen dívá. Tahy se propisují živě přes jeden sdílený dokument.
+Kdo otevře odkaz, sedne si na volné místo, třetí příchozí se jen dívá. Tahy se
+propisují živě přes jeden sdílený dokument. Panely jsou popsané **Ty** a **Soupeř**
+podle toho, na kterém místě sedíš; velký text vedle kamene říká, kdo je na tahu
+(nebo že se čeká na soupeře, případně že se jen koukáš).
 
 Vpravo nahoře jsou dvě tlačítka na správu míst:
 

@@ -66,23 +66,6 @@
   .kickbtn:hover{background:#3a2419;border-color:#9c6036}
   .kickbtn.armed{background:#7a2020;border-color:#e05252;color:#fff}
 
-  /* ---------- online lišta ---------- */
-  .netbar{
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-    background:linear-gradient(180deg,var(--panel),#1e1636);
-    border:1px solid var(--line);border-left:3px solid var(--a);
-    border-radius:12px;padding:9px 14px;margin-bottom:14px;font-size:13px;
-  }
-  .netbar[hidden]{display:none!important}
-  .netbar.waiting{border-left-color:var(--gold)}
-  .netbar .tag{
-    font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;
-    color:#2a1a00;background:linear-gradient(135deg,var(--gold),var(--gold2));
-    border-radius:999px;padding:3px 9px;
-  }
-  .netbar .seat{font-weight:800;color:var(--ink)}
-  .netbar .note{color:var(--muted);font-weight:600}
-
   /* ---------- layout ---------- */
   .stage{display:grid;grid-template-columns:1fr minmax(300px,420px) 1fr;gap:16px;align-items:start}
   @media (max-width:900px){
@@ -103,11 +86,7 @@
   .player.p0{--pc:var(--a)} .player.p1{--pc:var(--b)}
   .player.active{border-color:var(--pc);box-shadow:0 0 0 1px var(--pc),0 12px 34px -16px var(--pc)}
   .player.active::before{opacity:1}
-  .pname{
-    width:100%;background:transparent;border:0;border-bottom:1px dashed transparent;
-    color:var(--ink);font-size:15px;font-weight:800;padding:2px 0 4px;outline:none;letter-spacing:.3px;
-  }
-  .pname:hover,.pname:focus{border-bottom-color:var(--line)}
+  .pname{color:var(--ink);font-size:15px;font-weight:800;padding:2px 0 4px;letter-spacing:.3px}
   .pturn{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--pc);height:13px;font-weight:700}
   .score{font-size:34px;font-weight:800;line-height:1.1;margin:2px 0 1px;font-variant-numeric:tabular-nums}
   .score small{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:1px}
@@ -130,13 +109,18 @@
   /* ---------- center / board ---------- */
   .center{display:flex;flex-direction:column;gap:12px;align-items:center}
   .queue{
-    display:flex;align-items:stretch;gap:16px;background:var(--panel);border:1px solid var(--line);
-    border-radius:16px;padding:12px 16px;width:100%;justify-content:center;
+    display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;padding:12px 16px;width:100%;justify-content:center;flex-wrap:wrap;
   }
-  .queue .col{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:8px}
-  .queue .col + .col{border-left:1px solid var(--line);padding-left:16px}
-  .queue .lab{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700;white-space:nowrap}
-  .qnext{display:flex;gap:8px;align-items:center;height:60px}
+  .turnbig{
+    flex:1 1 auto;min-width:0;text-align:right;
+    font-size:clamp(15px,2.3vw,20px);font-weight:800;letter-spacing:.2px;line-height:1.25;
+    color:var(--tc,var(--muted));transition:.25s color;
+  }
+  .qnext{display:flex;gap:8px;align-items:center}
+  @media (max-width:520px){
+    .turnbig{flex:1 0 100%;text-align:center}
+  }
   /* --cell si náhledy nastavují samy, aby velikost symbolu nezávisela na velikosti políček desky */
   .cur{
     --cell:60px;width:60px;height:60px;border-radius:14px;display:grid;place-items:center;
@@ -286,16 +270,10 @@
     </div>
   </header>
 
-  <div class="netbar" id="netbar" hidden>
-    <span class="tag">Online</span>
-    <span class="seat">Jsi <span id="netSeat">—</span></span>
-    <span class="note" id="netNote"></span>
-  </div>
-
   <div class="stage">
     <div class="player p0" id="pan0">
       <div class="pturn" id="turn0">na tahu</div>
-      <input class="pname" id="name0" value="Hráč 1" maxlength="14" spellcheck="false">
+      <div class="pname" id="name0">Hráč 1</div>
       <div class="score"><span id="sc0">0</span> <small>BODŮ</small></div>
       <div class="llamas" id="ll0"></div>
       <div class="meter"><i id="mt0"></i></div>
@@ -304,14 +282,9 @@
 
     <div class="center">
       <div class="queue">
-        <div class="col">
-          <div class="lab">Tvůj kámen</div>
-          <div class="cur" id="curTile"></div>
-        </div>
-        <div class="col">
-          <div class="lab">Další v pořadí</div>
-          <div class="qnext" id="qNext"></div>
-        </div>
+        <div class="turnbig" id="turnBig">Jsi na tahu</div>
+        <div class="cur" id="curTile"></div>
+        <div class="qnext" id="qNext"></div>
       </div>
 
       <div class="play">
@@ -330,7 +303,7 @@
 
     <div class="player p1" id="pan1">
       <div class="pturn" id="turn1">na tahu</div>
-      <input class="pname" id="name1" value="Hráč 2" maxlength="14" spellcheck="false">
+      <div class="pname" id="name1">Hráč 2</div>
       <div class="score"><span id="sc1">0</span> <small>BODŮ</small></div>
       <div class="llamas" id="ll1"></div>
       <div class="meter"><i id="mt1"></i></div>
@@ -703,6 +676,8 @@ function renderPanels(){
   const changed = d !== state.llamaDiff;
   state.llamaDiff = d;
 
+  renderTurnLabel();
+  renderNames();
   for (const p of [0, 1]){
     $('sc' + p).textContent = state.score[p];
     $('pan' + p).classList.toggle('active', state.turn === p && !state.over);
@@ -758,12 +733,51 @@ function renderQueue(){
   }
 }
 
-function setStatus(html){ $('status').innerHTML = html; }
-function playerName(p){ return $('name' + p).value || ('Hráč ' + (p+1)); }
+/* Stavový řádek nese jen události (body, chyby). Trvalý stav hlásí velký text u kamene. */
+let statusHold = 0;
+function setStatus(html, holdMs = 0){
+  if (!holdMs && Date.now() < statusHold) return;   // nepřepisuj čerstvou hlášku
+  $('status').innerHTML = html;
+  statusHold = holdMs ? Date.now() + holdMs : 0;
+}
+
+/** Který panel jsem já: online moje místo, lokálně vždy levý, divák žádný. */
+function mySeatIndex(){ return ONLINE.db ? ONLINE.seat : 0; }
+
+function playerName(p){
+  const me = mySeatIndex();
+  if (me === null) return 'Hráč ' + (p + 1);      // divák nikoho neoslovuje „Ty"
+  return p === me ? 'Ty' : 'Soupeř';
+}
+
+/** Velký popisek vlevo od kamene: co se právě děje. */
+/** Popisky panelů závisí na mém místě, které se dozvím až po připojení. */
+function renderNames(){
+  for (const p of [0, 1]) $('name' + p).textContent = playerName(p);
+}
+
+function renderTurnLabel(){
+  const el = $('turnBig');
+  if (!el) return;
+  let text, colour = null;
+  if (state.over){
+    text = 'Konec hry';
+  } else if (ONLINE.db && ONLINE.seat === null){
+    text = 'Koukáš se';
+  } else if (ONLINE.db && !bothSeated()){
+    text = 'Čeká se na soupeře';
+  } else {
+    const mine = state.turn === mySeatIndex();
+    text = mine ? 'Jsi na tahu' : 'Soupeř je na tahu';
+    colour = state.turn === 0 ? 'var(--a)' : 'var(--b)';
+  }
+  el.textContent = text;
+  el.style.setProperty('--tc', colour || 'var(--muted)');
+}
 
 function updateStatus(){
-  if (state.over) return;
-  setStatus(`Na tahu <b>${playerName(state.turn)}</b> — vsuň kámen šipkou u desky`);
+  renderTurnLabel();
+  if (!state.over) setStatus('');
 }
 
 /* --- šipky --- */
@@ -851,6 +865,7 @@ function freshGameDoc(){
 
 /** Převezme stav z dokumentu bez animace (první načtení nebo náprava rozejití). */
 function adoptDoc(d){
+  statusHold = 0;
   state.board = decodeBoard(d.board);
   state.queue = d.queue.slice();
   state.score = d.score.slice();
@@ -874,7 +889,6 @@ async function initOnline(){
 
   ONLINE.db = db;
   ONLINE.me = clientId();
-  setOnlineNote('Připojuji…');
 
   try {
     await claimSeat();
@@ -1099,22 +1113,15 @@ function canPlay(){
   return ONLINE.seat === state.turn && bothSeated();
 }
 
-function setOnlineNote(text){
-  const el = $('netNote');
-  if (el) el.textContent = text;
-}
+/** Online události (vyhození, chyby) — trvalý stav hlásí velký popisek u kamene. */
+function setOnlineNote(text){ setStatus(text, 4000); }
 
 /** Sjednotí ovládání a online lištu s aktuálním stavem. */
 function refreshControls(){
   setArrows(canPlay());
-  const bar = $('netbar');
-  if (!bar) return;
-  if (!ONLINE.db){ bar.hidden = true; return; }
-  bar.hidden = false;
-
-  const seatName = ONLINE.seat === null ? 'divák' : `hráč ${ONLINE.seat + 1}`;
-  $('netSeat').textContent = seatName;
-  bar.classList.toggle('waiting', !bothSeated());
+  renderTurnLabel();
+  renderNames();
+  if (!ONLINE.db) return;
 
   const btn = $('seatBtn');
   if (ONLINE.seat !== null){
@@ -1145,12 +1152,7 @@ function refreshControls(){
       : 'Uvolní obě místa, aby se dalo začít znovu';
   }
 
-  if (ONLINE.flash){ setOnlineNote(ONLINE.flash); ONLINE.flash = null; return; }
-  if (ONLINE.seat === null) setOnlineNote('Obě místa jsou obsazená — koukáš se.');
-  else if (!bothSeated()) setOnlineNote('Čeká se na druhého hráče. Pošli mu odkaz na tuhle stránku.');
-  else if (state.over) setOnlineNote('Hra skončila.');
-  else if (state.turn === ONLINE.seat) setOnlineNote('Jsi na tahu.');
-  else setOnlineNote('Na tahu je soupeř…');
+  if (ONLINE.flash){ setOnlineNote(ONLINE.flash); ONLINE.flash = null; }
 }
 
 /* ============================================================
@@ -1195,7 +1197,8 @@ async function runMoveAnimation(dir, idx, sym){
 
 function announceScore(who, total, chain){
   if (total <= 0) return;
-  setStatus(`<b>${playerName(who)}</b> získává <b>+${total}</b> bodů${chain > 1 ? ` (kombo ×${chain})` : ''}`);
+  const lead = playerName(who) === 'Ty' ? '<b>Získáváš</b>' : `<b>${playerName(who)}</b> získává`;
+  setStatus(`${lead} <b>+${total}</b> bodů${chain > 1 ? ` (kombo ×${chain})` : ''}`, 2500);
 }
 
 async function playMove(dir, idx){
@@ -1226,19 +1229,21 @@ async function playMove(dir, idx){
   renderPanels();
   renderQueue();
   updateStatus();
-  setArrows(true);
+  refreshControls();
 }
 
 function showWinner(winner){
   Snd.win();
   const name = playerName(winner);
+  const mine = name === 'Ty';
   $('ovIcon').textContent = '🦙';
-  $('ovTitle').textContent = `${name} vyhrává!`;
+  $('ovTitle').textContent = mine ? 'Vyhrál jsi!' : `${name} vyhrává!`;
   $('ovText').innerHTML =
-    `Získal všech 10 lam náskokem <b>${Math.abs(state.score[0]-state.score[1])}</b> bodů.<br>` +
+    `O všech 10 lam rozhodl náskok <b>${Math.abs(state.score[0]-state.score[1])}</b> bodů.<br>` +
     `Konečné skóre: <b>${state.score[0]} : ${state.score[1]}</b>`;
   $('over').hidden = false;
-  setStatus(`🏆 <b>${name}</b> vyhrál hru`);
+  setStatus(mine ? '🏆 <b>Vyhrál jsi</b>' : `🏆 Vyhrál <b>${name}</b>`, 60000);
+  renderTurnLabel();
 }
 
 function endGame(winner){
@@ -1253,6 +1258,7 @@ function endGame(winner){
    Start
    ============================================================ */
 function newGame(){
+  statusHold = 0;
   state.board = randomStartBoard();
   state.queue = [randSym(), randSym(), randSym(), randSym()];
   state.turn = 0;
@@ -1310,7 +1316,6 @@ $('sndBtn').addEventListener('click', e => {
   e.currentTarget.textContent = Snd.on ? '🔊' : '🔇';
   if (Snd.on){ Snd.init(); Snd.blip(660); }
 });
-['name0','name1'].forEach(id => $(id).addEventListener('input', updateStatus));
 
 /* klávesové zkratky: 1–5 shora, Q–T zleva, A–G zprava */
 const KEYMAP = {
