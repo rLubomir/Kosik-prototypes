@@ -188,9 +188,6 @@
   @keyframes ejectA{to{opacity:0;filter:blur(3px)}}
 
   .glyph{font-size:calc(var(--cell) * .5);line-height:1;user-select:none}
-  .glyph.txt{font-weight:900;letter-spacing:-.5px;font-size:calc(var(--cell) * .42);
-    text-shadow:0 2px 0 #0004}
-  .glyph.bar{font-size:calc(var(--cell) * .28);letter-spacing:0}
 
   .fx{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:9}
   .pts{
@@ -364,18 +361,20 @@
 "use strict";
 
 /* ============================================================
-   Symboly a bodové hodnoty — přesně podle původní ICQ hry:
+   Bodové hodnoty jsou přesně podle původní ICQ hry:
    SEVEN 150 | BAR 100 | CHERRY 70 | PEAR 40 | PLUM 30 | BANANA 20 | BELL 10
+   Dvě nejcennější políčka mají jinou kresbu (lama místo sedmičky, srdce
+   místo BARu) — hodnoty i pořadí zůstávají.
    skóre skupiny = hodnota * (počet - 2)   → 3 = ×1, 4 = ×2, 5 = ×3
    ============================================================ */
 const SYMS = [
-  {key:'seven', name:'Sedmička', value:150, face:'7',   txt:true,  bg:'linear-gradient(160deg,#ff5f7e,#c9184a)'},
-  {key:'bar',   name:'BAR',      value:100, face:'BAR', txt:true,  bg:'linear-gradient(160deg,#d0a3ff,#7b2cbf)'},
-  {key:'cherry',name:'Třešně',   value:70,  face:'🍒',  txt:false, bg:'linear-gradient(160deg,#ff8f8f,#b3123a)'},
-  {key:'pear',  name:'Hruška',   value:40,  face:'🍐',  txt:false, bg:'linear-gradient(160deg,#c6f26e,#4d7c0f)'},
-  {key:'plum',  name:'Švestka',  value:30,  face:'🍇',  txt:false, bg:'linear-gradient(160deg,#b39cff,#4c1d95)'},
-  {key:'banana',name:'Banán',    value:20,  face:'🍌',  txt:false, bg:'linear-gradient(160deg,#ffe066,#b58900)'},
-  {key:'bell',  name:'Zvoneček', value:10,  face:'🔔',  txt:false, bg:'linear-gradient(160deg,#7fd8ff,#0369a1)'},
+  {key:'llama', name:'Lama',     value:150, face:'🦙', bg:'linear-gradient(160deg,#ff5f7e,#c9184a)'},
+  {key:'heart', name:'Srdce',    value:100, face:'❤️', bg:'linear-gradient(160deg,#d0a3ff,#7b2cbf)'},
+  {key:'cherry',name:'Třešně',   value:70,  face:'🍒', bg:'linear-gradient(160deg,#ff8f8f,#b3123a)'},
+  {key:'pear',  name:'Hruška',   value:40,  face:'🍐', bg:'linear-gradient(160deg,#c6f26e,#4d7c0f)'},
+  {key:'plum',  name:'Švestka',  value:30,  face:'🍇', bg:'linear-gradient(160deg,#b39cff,#4c1d95)'},
+  {key:'banana',name:'Banán',    value:20,  face:'🍌', bg:'linear-gradient(160deg,#ffe066,#b58900)'},
+  {key:'bell',  name:'Zvoneček', value:10,  face:'🔔', bg:'linear-gradient(160deg,#7fd8ff,#0369a1)'},
 ];
 /* cennější symboly padají o něco vzácněji (vyvážené tempo partie) */
 const WEIGHTS = [10, 11, 13, 15, 16, 17, 18];
@@ -581,9 +580,7 @@ let cell = 56, gap = 7;
 
 /* --- vykreslení symbolu --- */
 function faceHTML(s){
-  const S = SYMS[s];
-  const cls = S.txt ? (S.key === 'bar' ? 'glyph txt bar' : 'glyph txt') : 'glyph';
-  return `<span class="${cls}">${S.face}</span>`;
+  return `<span class="glyph">${SYMS[s].face}</span>`;
 }
 function paintSwatch(el, s){
   el.style.background = SYMS[s].bg;

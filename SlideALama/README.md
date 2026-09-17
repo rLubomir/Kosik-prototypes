@@ -111,8 +111,8 @@ Tabulka je vidět přímo pod hrací deskou, není schovaná v pravidlech:
 
 | Symbol | 3 stejné | 4 stejné (×2) | 5 stejných (×3) |
 |--------|---------:|--------------:|----------------:|
-| 7 Sedmička | 150 | 300 | 450 |
-| BAR | 100 | 200 | 300 |
+| 🦙 Lama | 150 | 300 | 450 |
+| ❤️ Srdce | 100 | 200 | 300 |
 | 🍒 Třešně | 70 | 140 | 210 |
 | 🍐 Hruška | 40 | 80 | 120 |
 | 🍇 Švestka | 30 | 60 | 90 |
@@ -129,6 +129,9 @@ politika). Přesná čísla a mechanika proto vycházejí ze **zdrojového kódu
 původní ICQ hry** ([zitmen/slide-a-lama](https://github.com/zitmen/slide-a-lama)),
 který hru reverzně analyzoval — odtud jsou bodové hodnoty symbolů, vzorec
 `hodnota × (počet − 2)`, chování vsouvání kamenů i podmínka výhry na rozdíl 300 bodů.
+
+Kresba dvou nejcennějších políček je jiná než v originále — místo sedmičky je lama
+a místo BARu srdce. Hodnoty, pořadí ani četnosti se tím nemění, jde čistě o vzhled.
 
 Jediné, co ze zdrojů dohledat nešlo, je **četnost jednotlivých symbolů**. Ta je proto
 navržená tak, aby cennější symboly padaly o něco vzácněji a partie měla rozumné tempo
