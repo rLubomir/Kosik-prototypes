@@ -120,7 +120,7 @@ Tabulka je vidět přímo pod hrací deskou, není schovaná v pravidlech:
 | ❤️ Srdce | 100 | 200 | 300 |
 | 🍒 Třešně | 70 | 140 | 210 |
 | 🍐 Hruška | 40 | 80 | 120 |
-| 🍇 Švestka | 30 | 60 | 90 |
+| 🍇 Hrozen | 30 | 60 | 90 |
 | 🍌 Banán | 20 | 40 | 60 |
 | 🔔 Zvoneček | 10 | 20 | 30 |
 

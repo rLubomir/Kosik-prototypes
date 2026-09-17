@@ -379,8 +379,8 @@
 /* ============================================================
    Bodové hodnoty jsou přesně podle původní ICQ hry:
    SEVEN 150 | BAR 100 | CHERRY 70 | PEAR 40 | PLUM 30 | BANANA 20 | BELL 10
-   Dvě nejcennější políčka mají jinou kresbu (lama místo sedmičky, srdce
-   místo BARu) — hodnoty i pořadí zůstávají.
+   Kresba se od originálu na třech místech liší: lama místo sedmičky, srdce
+   místo BARu a hrozen místo švestky. Hodnoty ani pořadí to nemění.
    skóre skupiny = hodnota * (počet - 2)   → 3 = ×1, 4 = ×2, 5 = ×3
    ============================================================ */
 const SYMS = [
@@ -388,7 +388,7 @@ const SYMS = [
   {key:'heart', name:'Srdce',    value:100, face:'❤️', bg:'linear-gradient(160deg,#ff5f7e,#c9184a)'},
   {key:'cherry',name:'Třešně',   value:70,  face:'🍒', bg:'linear-gradient(160deg,#ff8f8f,#b3123a)'},
   {key:'pear',  name:'Hruška',   value:40,  face:'🍐', bg:'linear-gradient(160deg,#c6f26e,#4d7c0f)'},
-  {key:'plum',  name:'Švestka',  value:30,  face:'🍇', bg:'linear-gradient(160deg,#b39cff,#4c1d95)'},
+  {key:'grape', name:'Hrozen',   value:30,  face:'🍇', bg:'linear-gradient(160deg,#b39cff,#4c1d95)'},
   {key:'banana',name:'Banán',    value:20,  face:'🍌', bg:'linear-gradient(160deg,#ffe066,#b58900)'},
   {key:'bell',  name:'Zvoneček', value:10,  face:'🔔', bg:'linear-gradient(160deg,#7fd8ff,#0369a1)'},
 ];
