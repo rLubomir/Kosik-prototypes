@@ -120,6 +120,8 @@
     color:var(--tc,var(--muted));transition:.25s color;
   }
   .qnext{display:flex;gap:8px;align-items:center;flex:none}
+  /* oddělí kámen, který se právě pokládá, od těch čekajících */
+  .qsep{flex:none;width:1px;align-self:stretch;background:var(--line)}
   /* --cell si náhledy nastavují samy, aby velikost symbolu nezávisela na velikosti políček desky */
   .cur{
     flex:none;--cell:60px;width:60px;height:60px;border-radius:14px;display:grid;place-items:center;
@@ -283,6 +285,7 @@
       <div class="queue">
         <div class="turnbig" id="turnBig">Jsi na tahu</div>
         <div class="cur" id="curTile"></div>
+        <span class="qsep" aria-hidden="true"></span>
         <div class="qnext" id="qNext"></div>
       </div>
 
