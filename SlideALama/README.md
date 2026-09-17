@@ -60,10 +60,12 @@ nic se nenasazuje.
    }
    ```
 
-4. **Project settings → Your apps → Web app** (ikona `</>`). Zaregistruj aplikaci
-   a zkopíruj objekt `firebaseConfig`.
-5. Vlož ho v `index.html` do konstanty `FIREBASE_CONFIG` (je hned na začátku skriptu,
-   označená komentářem). Podstatná je položka `databaseURL`.
+4. Adresu databáze najdeš nad jejím obsahem, ve tvaru
+   `https://…-default-rtdb.europe-west1.firebasedatabase.app`.
+5. Vlož adresu databáze v `index.html` do konstanty `FIREBASE_CONFIG` (hned na začátku
+   skriptu, označená komentářem). Nic dalšího z konfigurace potřeba není — `apiKey` a spol.
+   se používají až pro přihlašování, které tu není, takže krok se zaregistrováním
+   webové aplikace můžeš přeskočit.
 6. Nahraj soubor na hosting a je hotovo.
 
 **Ty údaje nejsou tajné.** U webových aplikací jsou vždycky veřejné — kdokoli si je
